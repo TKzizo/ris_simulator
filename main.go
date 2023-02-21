@@ -4,7 +4,7 @@ import "fmt"
 
 func main() {
 
-	ris := RIS{N: 4, xyz: Coordinates{x: 40, y: 50, z: 2}}
+	ris := RIS{N: 256, xyz: Coordinates{x: 40, y: 50, z: 2}}
 	tx := Tx_Rx{N: 1, xyz: Coordinates{x: 0, y: 25, z: 2}}
 	rx := Tx_Rx{N: 1, xyz: Coordinates{x: 38, y: 48, z: 1}}
 

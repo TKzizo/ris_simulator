@@ -8,6 +8,7 @@ type RIS struct {
 	Theta_Rx float64
 	Phi_Tx   float64
 	Phi_Rx   float64
+	//nbits  int // number of bits -> number of reflection states
 }
 
 func (r *RIS) Setup(Lambda float64) {
