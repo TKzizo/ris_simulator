@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/cmplx"
 )
@@ -15,6 +14,6 @@ func GetCoefficients(H, G []complex128) []complex128 {
 		Theta_ris = append(Theta_ris, cmplx.Rect(1, math.Remainder(-(phi_n+psi_n), 2*math.Pi)))
 	}
 
-	fmt.Println("RIS_Coeff: ", Theta_ris)
+	//fmt.Println("RIS_Coeff: ", Theta_ris)
 	return Theta_ris
 }

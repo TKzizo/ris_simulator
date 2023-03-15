@@ -18,4 +18,5 @@ func main() {
 	rate := simulation.Rate(h, g, theta)
 
 	fmt.Println("Rate: ", rate)
+
 }

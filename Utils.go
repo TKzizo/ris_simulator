@@ -45,14 +45,14 @@ func Array_Response_RIS_Tx(s *Simulation, r *RIS, t *Tx_Rx) []complex128 {
 			vec = append(vec, expo)
 		}
 	}
-	//	fmt.Println(vec)
+	//	fmt.Println(vec)Theta_Tx
 	return vec
 }
 func Array_Response_RIS_Rx(s *Simulation, r *RIS, u *Tx_Rx) []complex128 {
 	var vec []complex128
 	for x := 0; x < int(math.Sqrt(float64(r.N))); x++ {
 		for y := 0; y < int(math.Sqrt(float64(r.N))); y++ {
-			argument := s.k * r.dis * (float64(x)*math.Sin(r.Theta_Rx) + float64(y)*math.Sin(r.Phi_Rx)*math.Cos(r.Theta_Tx))
+			argument := s.k * r.dis * (float64(x)*math.Sin(r.Theta_Rx) + float64(y)*math.Sin(r.Phi_Rx)*math.Cos(r.Theta_Rx))
 			//fmt.Println("argument[", x, y, "]", argument)
 			expo := cmplx.Exp(1i * complex(argument, 0))
 			//fmt.Println("Expo array_response: ", expo)
@@ -64,6 +64,7 @@ func Array_Response_RIS_Rx(s *Simulation, r *RIS, u *Tx_Rx) []complex128 {
 }
 func Determine_Pb(a, b Coordinates) float64 {
 	d := Distance(a, b)
+	//LOS probability in Indoor office
 	if d <= 1.2 {
 		return 1
 	} else if (1.2 < d) && (d <= 6.5) {

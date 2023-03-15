@@ -69,7 +69,10 @@ func (s *Simulation) H_channel() []complex128 {
 	s.Ris.Theta_Tx = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
 	s.Tx.Phi_RIS = float64(sign(s.Tx.xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Tx.xyz.y-s.Ris.xyz.y), math.Abs(s.Tx.xyz.x-s.Ris.xyz.x))
 	s.Tx.Theta_RIS = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
-
+	fmt.Println("s.Ris.Phi_Tx", s.Ris.Phi_Tx)
+	fmt.Println("s.Ris.Theta_Tx", s.Ris.Theta_Tx)
+	fmt.Println("s.Tx.Phi_RIS", s.Tx.Phi_RIS)
+	fmt.Println("s.Tx.Theta_RIS", s.Tx.Theta_RIS)
 	Ih_Ris_tx := distuv.Bernoulli{P: Determine_Pb(s.Ris.xyz, s.Tx.xyz), Src: rand.NewSource(rand.Uint64())} //bernoulli variable
 
 	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(rand.Uint64())} // Uniforma variable
@@ -82,21 +85,21 @@ func (s *Simulation) H_channel() []complex128 {
 
 	for i := 0; i < len(RIS_array_response); i++ {
 		attenuation := L(s, sf, s.Ris.xyz, s.Tx.xyz) * Ge_RIS
-		fmt.Println("H attenuation :", attenuation)
+		//fmt.Println("H attenuation :", attenuation)
 		bernoli := Ih_Ris_tx.Rand()
-		fmt.Println("H Bernoulli :", bernoli)
+		//fmt.Println("H Bernoulli :", bernoli)
 		tmp1 := math.Sqrt(attenuation * bernoli)
-		fmt.Println("H tmp1: ", tmp1)
+		//fmt.Println("H tmp1: ", tmp1)
 		val1 := complex(tmp1, 0)
-		fmt.Println("H val1 ", val1)
+		//fmt.Println("H val1 ", val1)
 		val2 := (RIS_array_response[i] * cmplx.Exp(1i*complex(eta.Rand(), 0)))
-		fmt.Println("H val2 ", val2)
+		//fmt.Println("H val2 ", val2)
 		val12 := val1 * val2
-		fmt.Println("H val12 ", val12)
+		//fmt.Println("H val12 ", val12)
 		RIS_array_response[i] = val12
 	}
 
-	fmt.Println("H_Channel: ", RIS_array_response)
+	//fmt.Println("H_Channel: ", RIS_array_response)
 	return RIS_array_response
 }
 func (s *Simulation) G_channel() []complex128 {
@@ -116,15 +119,15 @@ func (s *Simulation) G_channel() []complex128 {
 
 	for i := 0; i < len(RIS_array_response); i++ {
 		attenuation := L(s, sf, s.Ris.xyz, s.Tx.xyz) * Ge_RIS
-		fmt.Println("H attenuation :", attenuation)
+		//fmt.Println("H attenuation :", attenuation)
 		tmp1 := math.Sqrt(attenuation)
-		fmt.Println("H tmp1: ", tmp1)
+		//fmt.Println("H tmp1: ", tmp1)
 		val1 := complex(tmp1, 0)
-		fmt.Println("H val1 ", val1)
+		//fmt.Println("H val1 ", val1)
 		val2 := (RIS_array_response[i] * cmplx.Exp(1i*complex(eta.Rand(), 0)))
-		fmt.Println("H val2 ", val2)
+		//fmt.Println("H val2 ", val2)
 		val12 := val1 * val2
-		fmt.Println("H val12 ", val12)
+		//fmt.Println("H val12 ", val12)
 		RIS_array_response[i] = val12
 	}
 
