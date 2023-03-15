@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/cmplx"
 
+	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -32,36 +33,23 @@ func Ge(theta float64) float64 {
 	return Gain * math.Pow(math.Cos(theta), 2*q)
 }
 func L(s *Simulation, sf distuv.Normal, a, b Coordinates) float64 {
-	return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n*math.Log10(Distance(a, b))-sf.Rand())/10)
+	return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.PLE*math.Log10(Distance(a, b))-sf.Rand())/10)
 }
-func Array_Response_RIS_Tx(s *Simulation, r *RIS, t *Tx_Rx) []complex128 {
+
+func Array_Response(k float64, dx int, dy int, dis float64, AZA float64, ELA float64) *mat.CDense {
 	var vec []complex128
-	for x := 0; x < int(math.Sqrt(float64(r.N))); x++ {
-		for y := 0; y < int(math.Sqrt(float64(r.N))); y++ {
-			argument := s.k * r.dis * (float64(x)*math.Sin(r.Theta_Tx) + float64(y)*math.Sin(r.Phi_Tx)*math.Cos(r.Theta_Tx))
-			//fmt.Println("argument[", x, y, "]", argument)
-			expo := cmplx.Exp(1i * complex(argument, 0))
-			//fmt.Println("Expo array_response: ", expo)
-			vec = append(vec, expo)
+
+	for x := 0; x < dx; x++ {
+		for y := 0; y < dy; y++ {
+			argument := k * dis * (float64(x)*math.Sin(ELA) + float64(y)*math.Sin(AZA)*math.Cos(ELA)) //to be generalized for other positionement (rotation,different plane)
+			vec = append(vec, cmplx.Exp(1i*complex(argument, 0)))
 		}
 	}
-	//	fmt.Println(vec)Theta_Tx
-	return vec
+
+	return mat.NewCDense(dx*dy, 1, vec)
+
 }
-func Array_Response_RIS_Rx(s *Simulation, r *RIS, u *Tx_Rx) []complex128 {
-	var vec []complex128
-	for x := 0; x < int(math.Sqrt(float64(r.N))); x++ {
-		for y := 0; y < int(math.Sqrt(float64(r.N))); y++ {
-			argument := s.k * r.dis * (float64(x)*math.Sin(r.Theta_Rx) + float64(y)*math.Sin(r.Phi_Rx)*math.Cos(r.Theta_Rx))
-			//fmt.Println("argument[", x, y, "]", argument)
-			expo := cmplx.Exp(1i * complex(argument, 0))
-			//fmt.Println("Expo array_response: ", expo)
-			vec = append(vec, expo)
-		}
-	}
-	//	fmt.Println(vec)
-	return vec
-}
+
 func Determine_Pb(a, b Coordinates) float64 {
 	d := Distance(a, b)
 	//LOS probability in Indoor office
