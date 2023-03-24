@@ -23,10 +23,12 @@ type Updates struct {
 }
 
 type Simulation struct {
+	Env       Environment
 	Ris       RIS
 	Tx        Tx_Rx
 	Rx        Tx_Rx
 	Frequency float64
+	Lambda_p  float64
 	Lambda    float64 // wave length
 	k         float64
 	PLE       float64 // Path Loss exponent
@@ -42,6 +44,12 @@ func (s *Simulation) Setup() {
 	s.Lambda = 3.0 / 10 * s.Frequency // it's Simplified so it only supports GHz
 	s.k = 2 * math.Pi / s.Lambda
 
+	if s.Frequency == 28.0 {
+		s.Lambda_p = 1.8
+	} else if s.Frequency == 73.0 {
+		s.Lambda_p = 1.9
+	}
+
 	if s.PLE == 0.0 { //Pathloss exponent
 		s.PLE = 1.73
 	}
@@ -53,16 +61,6 @@ func (s *Simulation) Setup() {
 	}
 
 	s.Ris.Setup(s.Lambda)
-	/*
-	   fmt.Println("RIS: ", s.Ris)
-	   fmt.Println("Tx: ", s.Tx)
-	   fmt.Println("Rx: ", s.Rx)
-	   fmt.Println("Frequency: ", s.Frequency)
-	   fmt.Println("Lambda: ", s.Lambda)
-	   fmt.Println("k: ", s.k)
-	   fmt.Println("PLE: ", s.PLE)
-	   fmt.Println("sigma: ", s.sigma)
-	*/
 }
 func (s *Simulation) H_channel() mat.CDense {
 
