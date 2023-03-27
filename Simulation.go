@@ -35,8 +35,7 @@ type Simulation struct {
 	b         float64 // systemc parameter
 	sigma     float64 // db
 	channel   chan Updates
-
-	//Scenario int // sideWall - oppositeWall
+	Broadside int8 // 0: SideWall 1: OppositeWall
 	//arrayType int // ULA - PA
 }
 
@@ -61,32 +60,6 @@ func (s *Simulation) Setup() {
 	}
 
 	s.Ris.Setup(s.Lambda)
-}
-func (s *Simulation) H_channel() mat.CDense {
-
-	var H mat.CDense
-	s.Ris.Phi_Tx = float64(sign(s.Ris.xyz.x, s.Tx.xyz.x)) * math.Atan2(math.Abs(s.Ris.xyz.x-s.Tx.xyz.x), math.Abs(s.Ris.xyz.y-s.Tx.xyz.y))
-	s.Ris.Theta_Tx = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
-	s.Tx.Phi_RIS = float64(sign(s.Tx.xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Tx.xyz.y-s.Ris.xyz.y), math.Abs(s.Tx.xyz.x-s.Ris.xyz.x))
-	s.Tx.Theta_RIS = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
-
-	//Ih_Ris_tx := distuv.Bernoulli{P: Determine_Pb(s.Ris.xyz, s.Tx.xyz), Src: rand.NewSource(rand.Uint64())} //bernoulli variable
-
-	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(1)} // Uniforma variable
-
-	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma, 2), Src: rand.NewSource(1)} // variable loi normale for shadow fading
-
-	TX_array_response := Array_Response(s.k, int(math.Sqrt(float64(s.Tx.N))), int(math.Sqrt(float64(s.Tx.N))), s.Ris.dis, s.Tx.Phi_RIS, s.Tx.Theta_RIS)
-	RIS_array_response := Array_Response(s.k, int(math.Sqrt(float64(s.Ris.N))), int(math.Sqrt(float64(s.Ris.N))), s.Ris.dis, s.Ris.Phi_Tx, s.Ris.Theta_Tx)
-
-	H.Mul(RIS_array_response, TX_array_response.T())
-	Ge_RIS := Ge(s.Ris.Theta_Tx)
-	attenuation := math.Sqrt(L(s, sf, s.Ris.xyz, s.Tx.xyz) * Ge_RIS)
-	scalar := cmplx.Rect(attenuation, eta.Rand())
-
-	H.Scale(scalar, &H)
-
-	return H
 }
 
 func (s *Simulation) G_channel() mat.CDense {

@@ -68,6 +68,18 @@ func Sub(a, b Cmatrix) Cmatrix {
 	return c
 }
 
+func Transpose(a Cmatrix) Cmatrix {
+	c := Cmatrix{}
+	c.Init(a.col, a.row)
+
+	for x := 0; x < a.row; x++ {
+		for y := 0; y < a.col; y++ {
+			c.Data[y][x] = a.Data[x][y]
+		}
+	}
+	return c
+}
+
 func Scale(a Cmatrix, s float64) Cmatrix {
 
 	c := Cmatrix{}
