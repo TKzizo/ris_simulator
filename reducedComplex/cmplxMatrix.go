@@ -80,14 +80,14 @@ func Transpose(a Cmatrix) Cmatrix {
 	return c
 }
 
-func Scale(a Cmatrix, s float64) Cmatrix {
+func Scale(a Cmatrix, s complex128) Cmatrix {
 
 	c := Cmatrix{}
 	c.Init(a.row, a.col)
 
 	for x := 0; x < a.row; x++ {
 		for y := 0; y < a.col; y++ {
-			c.Data[x][y] = a.Data[x][y] * complex(s, 0)
+			c.Data[x][y] = a.Data[x][y] * s
 		}
 	}
 

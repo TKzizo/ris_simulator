@@ -23,19 +23,23 @@ type Updates struct {
 }
 
 type Simulation struct {
-	Env       Environment
-	Ris       RIS
-	Tx        Tx_Rx
-	Rx        Tx_Rx
-	Frequency float64
-	Lambda_p  float64
-	Lambda    float64 // wave length
-	k         float64
-	PLE       float64 // Path Loss exponent
-	b         float64 // systemc parameter
-	sigma     float64 // db
-	channel   chan Updates
-	Broadside int8 // 0: SideWall 1: OppositeWall
+	Env        Environment
+	Ris        RIS
+	Tx         Tx_Rx
+	Rx         Tx_Rx
+	Frequency  float64
+	f0         float64
+	Lambda_p   float64
+	Lambda     float64 // wave length
+	k          float64
+	n_LOS      float64 // Path Loss exponent
+	b_LOS      float64 // systemc parameter
+	sigma_LOS  float64 // db
+	n_NLOS     float64
+	b_NLOS     float64
+	sigma_NLOS float64
+	channel    chan Updates
+	Broadside  int8 // 0: SideWall 1: OppositeWall
 	//arrayType int // ULA - PA
 }
 
@@ -49,14 +53,28 @@ func (s *Simulation) Setup() {
 		s.Lambda_p = 1.9
 	}
 
-	if s.PLE == 0.0 { //Pathloss exponent
-		s.PLE = 1.73
+	if s.f0 == 0.0 {
+		s.f0 = 24.2
 	}
-	// we didn't check for s.b because as default value
-	// we would have given it 0.0 which already its current value
 
-	if s.sigma == 0.0 {
-		s.sigma = 3.02
+	if s.n_LOS == 0.0 { //Pathloss exponent
+		s.n_LOS = 1.73
+	}
+
+	if s.n_NLOS == 0.0 { //Pathloss exponent
+		s.n_NLOS = 3.79
+	}
+
+	if s.b_NLOS == 0.0 {
+		s.b_NLOS = 3.19
+	}
+
+	if s.sigma_LOS == 0.0 {
+		s.sigma_LOS = 3.02
+	}
+
+	if s.sigma_NLOS == 0.0 {
+		s.sigma_NLOS = 8.29
 	}
 
 	s.Ris.Setup(s.Lambda)

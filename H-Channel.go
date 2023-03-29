@@ -1,24 +1,29 @@
+// TODO Replace all cmplx.Exp with cmplx.Rect
 package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
 	"math"
 	"math/cmplx"
+	"time"
 
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
 func (s *Simulation) H_channel(clusters []Cluster) cmat.Cmatrix {
-	// Calculate Phi and theta for RIS-TX and TX-RIS
-	s.Ris.Phi_Tx = float64(sign(s.Ris.xyz.x, s.Tx.xyz.x)) * math.Atan2(math.Abs(s.Ris.xyz.x-s.Tx.xyz.x), math.Abs(s.Ris.xyz.y-s.Tx.xyz.y))
-	s.Ris.Theta_Tx = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
+	// Calculate Phi and theta for RIS-TX and TX-RIS (H-LOS)
 	s.Tx.Phi_RIS = float64(sign(s.Tx.xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Tx.xyz.y-s.Ris.xyz.y), math.Abs(s.Tx.xyz.x-s.Ris.xyz.x))
+	s.Ris.Theta_Tx = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
 	s.Tx.Theta_RIS = float64(sign(s.Tx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-s.Tx.xyz.z)/Distance(s.Ris.xyz, s.Tx.xyz))
+	if s.Broadside == 0 { // side wall
+		s.Ris.Phi_Tx = float64(sign(s.Ris.xyz.x, s.Tx.xyz.x)) * math.Atan2(math.Abs(s.Ris.xyz.x-s.Tx.xyz.x), math.Abs(s.Ris.xyz.y-s.Tx.xyz.y))
+	} else if s.Broadside == 1 { // Opposite Wall
+		s.Ris.Phi_Tx = float64(sign(s.Ris.xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Ris.xyz.y-s.Tx.xyz.y), math.Abs(s.Ris.xyz.x-s.Tx.xyz.x))
+	}
+	//Calculate Phi and theta for RIS-Cluster and TX-Cluster (H-NLOS)
+	if s.Broadside == 0 { //SideWall
 
-	//Calculate Phi and theta for RIS-Cluster and TX-Cluster
-	//SideWall
-	if s.Broadside == 0 {
 		for i := 0; i < len(clusters); i++ {
 			for y := 0; y < len(clusters[i].Scatterers); y++ {
 				clusters[i].Scatterers[y].Phi_RIS = float64(sign(s.Ris.xyz.x, clusters[i].Scatterers[y].xyz.x)) * math.Atan2(math.Abs(s.Ris.xyz.x-clusters[i].Scatterers[y].xyz.x), math.Abs(s.Ris.xyz.y-clusters[i].Scatterers[y].xyz.y))
@@ -27,8 +32,7 @@ func (s *Simulation) H_channel(clusters []Cluster) cmat.Cmatrix {
 				clusters[i].Scatterers[y].Theta_TX = float64(sign(clusters[i].Scatterers[y].xyz.z, s.Tx.xyz.z)) * math.Asin(math.Abs(clusters[i].Scatterers[y].xyz.z-s.Tx.xyz.z)/Distance(s.Tx.xyz, clusters[i].Scatterers[y].xyz))
 			}
 		}
-		//OppositeWall
-	} else if s.Broadside == 1 {
+	} else if s.Broadside == 1 { //OppositeWall
 		for i := 0; i < len(clusters); i++ {
 			for y := 0; y < len(clusters[i].Scatterers); y++ {
 				clusters[i].Scatterers[y].Phi_RIS = float64(sign(clusters[i].Scatterers[y].xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Ris.xyz.y-clusters[i].Scatterers[y].xyz.y), math.Abs(s.Ris.xyz.x-clusters[i].Scatterers[y].xyz.x))
@@ -39,20 +43,65 @@ func (s *Simulation) H_channel(clusters []Cluster) cmat.Cmatrix {
 		}
 	}
 
-	//Ih_Ris_tx := distuv.Bernoulli{P: Determine_Pb(s.Ris.xyz, s.Tx.xyz), Src: rand.NewSource(rand.Uint64())} //bernoulli variable
-
-	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(1)} // Uniforma variable
-
-	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma, 2), Src: rand.NewSource(1)} // variable loi normale for shadow fading
-
-	Ge_RIS := Ge(s.Ris.Theta_Tx)
-	attenuation := math.Sqrt(L(s, sf, s.Ris.xyz, s.Tx.xyz) * Ge_RIS)
-	scalar := cmplx.Rect(attenuation, eta.Rand())
-
-	return cmat.Scale(Array_Response_H(s, clusters), scalar)
+	return cmat.Add(HLos(s), HNLos(s))
 }
 
-func Array_Response_H(s *Simulation, clusters []Cluster) cmat.Cmatrix {
+func HLos(s *Simulation) cmat.Cmatrix {
+	//Ih_Ris_tx := distuv.Bernoulli{P: Determine_Pb(s.Ris.xyz, s.Tx.xyz), Src: rand.NewSource(rand.Uint64())} //bernoulli variable
+	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(uint64(time.Now().Unix()))} // shadow phase
+	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_LOS, 2), Src: rand.NewSource(uint64(time.Now().Unix()))}
+	ge := Ge(s.Ris.Theta_Tx)
+	attenuation := math.Sqrt(L(s, sf, s.Ris.xyz, s.Tx.xyz) * ge)
+
+	return cmat.Scale(Array_Response_HLos(s), complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
+}
+
+func HNLos(s *Simulation) cmat.Cmatrix {
+
+}
+
+func Array_Response_HLos(s *Simulation) cmat.Cmatrix {
+
+	AR_tx_ris := cmat.Cmatrix{}
+	AR_tx_ris.Init(s.Ris.N, s.Tx.N)
+
+	dx := int(math.Sqrt(float64(s.Ris.N)))
+	dy := dx
+
+	AR_ris := make([]complex128, s.Ris.N, s.Ris.N)
+	AR_tx := make([]complex128, s.Tx.N, s.Tx.N)
+
+	for x := 0; x < dx; x++ {
+		for y := 0; y < dy; y++ {
+			AR_ris[x*dx+dy] = cmplx.Exp(
+				1i * complex(s.k*s.Ris.dis*(float64(x)*math.Sin(s.Ris.Theta_Tx)+float64(y)*math.Sin(s.Ris.Phi_Tx)*math.Cos(s.Ris.Theta_Tx)), 0))
+		}
+	}
+
+	if s.Tx.Type == 0 {
+		for x := 0; x < s.Tx.N; x++ {
+			AR_tx[x] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(float64(x)*math.Sin(s.Tx.Phi_RIS)*math.Cos(s.Tx.Theta_RIS)), 0))
+		}
+	} else if s.Tx.Type == 1 {
+		dx := int(math.Sqrt(float64(s.Ris.N)))
+		dy := dx
+
+		for x := 0; x < dx; x++ {
+			for y := 0; y < dy; y++ {
+				AR_tx[x*dx+y] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(float64(x)*math.Sin(s.Tx.Phi_RIS)*math.Cos(s.Tx.Theta_RIS)+float64(y)*math.Sin(s.Tx.Theta_RIS)), 0))
+			}
+		}
+	}
+
+	for x := 0; x < len(AR_tx); x++ {
+		for y := 0; y < len(AR_ris); y++ {
+			AR_tx_ris.Data[y][x] = AR_tx[x] * AR_ris[y]
+		}
+	}
+	return AR_tx_ris
+}
+
+func Array_Response_HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 	var nbr_scatterers int
 	for _, cluster := range clusters {
 		nbr_scatterers += len(cluster.Scatterers)
@@ -74,7 +123,7 @@ func Array_Response_H(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 			}
 			if s.Tx.Type == 0 {
 				for x := 0; x < s.Tx.N; x++ {
-					AR_cs_tx.Data[index][x] = cmplx.Exp(1i * complex(s.k*s.Ris.dis*(math.Sin(scatterer.Phi_TX)*math.Cos(scatterer.Theta_TX)), 0))
+					AR_cs_tx.Data[index][x] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(math.Sin(scatterer.Phi_TX)*math.Cos(scatterer.Theta_TX)), 0))
 				}
 
 			} else if s.Tx.Type == 1 {
@@ -82,7 +131,7 @@ func Array_Response_H(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 				dy := dx
 				for x := 0; x < dx; x++ {
 					for y := 0; y < dy; y++ {
-						AR_cs_tx.Data[index][x*dx+y] = cmplx.Exp(1i * complex(s.k*s.Ris.dis*(float64(x)*math.Sin(scatterer.Phi_TX)*math.Cos(scatterer.Theta_TX)+float64(y)*math.Sin(scatterer.Theta_TX)), 0))
+						AR_cs_tx.Data[index][x*dx+y] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(float64(x)*math.Sin(scatterer.Phi_TX)*math.Cos(scatterer.Theta_TX)+float64(y)*math.Sin(scatterer.Theta_TX)), 0))
 					}
 				}
 			}
