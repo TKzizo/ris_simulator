@@ -1,4 +1,5 @@
 // TODO Replace all cmplx.Exp with cmplx.Rect
+// TODO convert all structs into slices for optimisation
 package main
 
 import (
@@ -43,7 +44,7 @@ func (s *Simulation) H_channel(clusters []Cluster) cmat.Cmatrix {
 		}
 	}
 
-	return cmat.Add(HLos(s), HNLos(s))
+	return cmat.Add(HLos(s), HNLos(s, clusters))
 }
 
 func HLos(s *Simulation) cmat.Cmatrix {
@@ -51,17 +52,7 @@ func HLos(s *Simulation) cmat.Cmatrix {
 	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(uint64(time.Now().Unix()))} // shadow phase
 	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_LOS, 2), Src: rand.NewSource(uint64(time.Now().Unix()))}
 	ge := Ge(s.Ris.Theta_Tx)
-	attenuation := math.Sqrt(L(s, sf, s.Ris.xyz, s.Tx.xyz) * ge)
-
-	return cmat.Scale(Array_Response_HLos(s), complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
-}
-
-func HNLos(s *Simulation) cmat.Cmatrix {
-
-}
-
-func Array_Response_HLos(s *Simulation) cmat.Cmatrix {
-
+	attenuation := math.Sqrt(L(s, sf, true, s.Ris.xyz, s.Tx.xyz) * ge)
 	AR_tx_ris := cmat.Cmatrix{}
 	AR_tx_ris.Init(s.Ris.N, s.Tx.N)
 
@@ -98,10 +89,12 @@ func Array_Response_HLos(s *Simulation) cmat.Cmatrix {
 			AR_tx_ris.Data[y][x] = AR_tx[x] * AR_ris[y]
 		}
 	}
-	return AR_tx_ris
+
+	return cmat.Scale(AR_tx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
 }
 
-func Array_Response_HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
+func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
+
 	var nbr_scatterers int
 	for _, cluster := range clusters {
 		nbr_scatterers += len(cluster.Scatterers)
@@ -110,12 +103,17 @@ func Array_Response_HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 	var AR_cs_ris, AR_cs_tx cmat.Cmatrix
 	AR_cs_ris.Init(nbr_scatterers, s.Ris.N)
 	AR_cs_tx.Init(nbr_scatterers, s.Tx.N)
+
+	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_NLOS, 2), Src: rand.NewSource(uint64(time.Now().Unix()))}
+	ge := make([]float64, nbr_scatterers, nbr_scatterers)
+	attenuation := make([]float64, nbr_scatterers, nbr_scatterers)
+	beta := make([]complex128, nbr_scatterers, nbr_scatterers)
+
 	dx := int(math.Sqrt(float64(s.Ris.N)))
 	dy := dx
 	index := 0
 	for _, cluster := range clusters {
 		for _, scatterer := range cluster.Scatterers {
-			index++
 			for x := 0; x < dx; x++ {
 				for y := 0; y < dy; y++ {
 					AR_cs_ris.Data[index][x*dx+y] = cmplx.Exp(1i * complex(s.k*s.Ris.dis*(float64(x)*math.Sin(scatterer.Theta_RIS)+float64(y)*math.Sin(scatterer.Phi_RIS)*math.Cos(scatterer.Theta_RIS)), 0))
@@ -135,8 +133,29 @@ func Array_Response_HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 					}
 				}
 			}
+			ge[index] = Ge(scatterer.Theta_RIS)
+			attenuation[index] = L(s, sf, false, s.Ris.xyz, s.Tx.xyz, scatterer.xyz)
+			beta[index] = complex(sf.Rand()/math.Sqrt(2), sf.Rand()/math.Sqrt(2))
+			index++
 		}
 	}
 
-	return cmat.Mul(cmat.Transpose(AR_cs_ris), AR_cs_tx)
+	c := cmat.Cmatrix{}
+	c.Init(s.Ris.N, s.Tx.N)
+
+	tmp := cmat.Cmatrix{}
+	tmp.Init(s.Ris.N, s.Tx.N)
+
+	for i := 0; i < nbr_scatterers; i++ {
+		val := beta[i] * complex(math.Sqrt(ge[i]*attenuation[i]), 0)
+		for x := 0; x < s.Tx.N; x++ {
+			for y := 0; y < s.Ris.N; y++ {
+				tmp.Data[y][x] = val * AR_cs_ris.Data[i][y] * AR_cs_tx.Data[i][x]
+			}
+		}
+
+		c = cmat.Add(tmp, c)
+	}
+
+	return c
 }

@@ -30,11 +30,11 @@ func sign(a, b float64) int8 {
 func Ge(theta float64) float64 {
 	return Gain * math.Pow(math.Cos(theta), 2*q)
 }
-func L(s *Simulation, sf distuv.Normal, los bool, a, b Coordinates) float64 {
+func L(s *Simulation, sf distuv.Normal, los bool, a ...Coordinates) float64 {
 	if los == true {
-		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a, b))-sf.Rand())/10)
+		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a[0], a[1]))-sf.Rand())/10)
 	} else {
-		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a, b))-sf.Rand())/10)
+		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a[0], a[1])+Distance(a[1], a[2]))-sf.Rand())/10)
 	}
 }
 
