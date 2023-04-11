@@ -1,8 +1,10 @@
 package main
 
 import (
+	cmat "RIS_SIMULATOR/reducedComplex"
 	"math"
 
+	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -48,4 +50,16 @@ func Determine_Pb(a, b Coordinates) float64 {
 	} else {
 		return 0.32 * math.Exp((-d+6.5)/32.6)
 	}
+}
+
+func cmat2cdense(matr cmat.Cmatrix) *mat.CDense {
+	size := matr.Row * matr.Col
+	data := make([]complex128, size)
+	for x := 0; x < matr.Row; x++ {
+		for y := 0; y < matr.Col; y++ {
+			data[x*matr.Col+y] = matr.Data[x][y]
+		}
+
+	}
+	return mat.NewCDense(matr.Row, matr.Col, data)
 }
