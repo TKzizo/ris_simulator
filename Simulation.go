@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/cmplx"
 
@@ -114,16 +113,35 @@ func (s *Simulation) Update() {
 	}
 }
 
-func (s *Simulation) Rate_SNR(H, G, Theta mat.CDense, SNR int) (float64, float64) {
+func (s *Simulation) rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 
 	var temp1 mat.CDense
 	var temp2 mat.CDense
+	rate := 0.0
 
-	temp1.Mul(G.T(), &Theta)
+	temp1.Mul(G.T(), Theta)
 	temp2.Mul(&temp1, &H)
-	fmt.Println(temp2.RawCMatrix().Data)
+	rate = math.Log2(math.Pow(cmplx.Abs(temp2.At(0, 0)), 2) * Pt / P_n)
 
-	snr := math.Pow(cmplx.Abs(temp2.RawCMatrix().Data[0]), 2) * Pt / P_n
+	return rate
+}
 
-	return math.Log2(1 + snr), float64(SNR) * snr
+func (s *Simulation) MIMO_Rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
+	var temp1 mat.CDense
+	var temp2 mat.CDense
+	rate := 0.0
+
+	temp1.Mul(G.T(), Theta)
+	temp2.Mul(&temp1, &H)
+	temp1.Mul(temp2.H(), &temp2)
+	for i := 0; i < temp1.RawCMatrix().Rows; i++ {
+		temp1.Set(i, i, temp1.At(i, i)+complex(1, 0))
+	}
+	temp1.Scale(complex(Pt/P_n, 0), &temp1)
+	var lu cLU
+	lu.Factorize(temp1)
+	rate = lu.Det()
+
+	return rate
+
 }
