@@ -157,5 +157,5 @@ func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 		c = cmat.Add(tmp, c)
 	}
 
-	return c
+	return cmat.Scale(c, complex(math.Sqrt(1.0/float64(nbr_scatterers)), 0))
 }

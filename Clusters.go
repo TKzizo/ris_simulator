@@ -76,9 +76,9 @@ func GenerateCoordinates(c *Cluster, s *Simulation) {
 	if len(c.Scatterers) == 1 {
 		c.Scatterers = []Scatterer{
 			{
-				xyz:   Coordinates{x: c.xyz.x, y: c.xyz.y, z: c.xyz.z},
-				phi:   c.mean_phi,
-				theta: c.mean_theta,
+				xyz:      Coordinates{x: c.xyz.x, y: c.xyz.y, z: c.xyz.z},
+				Phi_TX:   c.mean_phi,
+				Theta_TX: c.mean_theta,
 			},
 		}
 	}
@@ -86,8 +86,8 @@ func GenerateCoordinates(c *Cluster, s *Simulation) {
 
 func GenerateAngles(c *Cluster) {
 	for i := 0; i < len(c.Scatterers); i++ {
-		c.Scatterers[i].phi = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_phi
-		c.Scatterers[i].theta = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_theta
+		c.Scatterers[i].Phi_TX = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_phi
+		c.Scatterers[i].Theta_TX = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_theta
 
 	}
 }
