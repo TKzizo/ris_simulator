@@ -4,6 +4,7 @@ import (
 	cmat "RIS_SIMULATOR/reducedComplex"
 	"math"
 
+	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/stat/distuv"
 )
@@ -34,9 +35,9 @@ func Ge(theta float64) float64 {
 }
 func L(s *Simulation, sf distuv.Normal, los bool, a ...Coordinates) float64 {
 	if los == true {
-		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a[0], a[1]))-sf.Rand())/10)
+		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a[0], a[1]))-(rand.Float64()*s.sigma_LOS))/10)
 	} else {
-		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_LOS*(1+s.b_LOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a[0], a[1])+Distance(a[1], a[2]))-sf.Rand())/10)
+		return math.Pow(10, (-20*math.Log10(4*math.Pi/s.Lambda)-10*s.n_NLOS*(1+s.b_NLOS*((s.Frequency-s.f0)/s.f0))*math.Log10(Distance(a[0], a[1])+Distance(a[1], a[2]))-(rand.Float64()*s.sigma_NLOS))/10)
 	}
 }
 

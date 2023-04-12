@@ -2,28 +2,23 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 func main() {
 
-	/*c := mat.NewDense(4, 1, []float64{1, 2, 3, 4})
-	fc := mat.Formatted(c, mat.Prefix("    "), mat.Squeeze())
-	fmt.Printf("with all values:\na = %v\n\n", fc)*/
-	ris := RIS{N: 64, xyz: Coordinates{x: 40, y: 50, z: 2}}
-	tx := Tx_Rx{N: 1, xyz: Coordinates{x: 0, y: 25, z: 2}}
-	rx := Tx_Rx{N: 1, xyz: Coordinates{x: 38, y: 48, z: 1}}
+	ris := RIS{N: 16, xyz: Coordinates{x: 40, y: 50, z: 2}}
+	tx := Tx_Rx{N: 2, xyz: Coordinates{x: 0, y: 25, z: 2}}
+	rx := Tx_Rx{N: 2, xyz: Coordinates{x: 38, y: 48, z: 1}}
 
-	simulation := Simulation{Ris: ris, Tx: tx, Rx: rx, Frequency: 28.0, channel: make(chan Updates, 1)}
+	simulation := Simulation{Ris: ris, Tx: tx, Rx: rx, Frequency: 28.0, Env: Environment{75.0, 50.0, 3.5}}
 
 	simulation.Setup()
+	list := simulation.Run()
 
-	h := simulation.H_channel()
-	g := simulation.G_channel()
-	theta := GetCoefficients(h, g)
-	fmt.Println(h)
-	fmt.Println(g)
-	fmt.Println(theta)
+	for _, mat := range list {
+		//fmt.Println(mat)
+		fmt.Fprintln(os.Stderr, mat)
+	}
 
-	rate, snr := simulation.Rate_SNR(h, g, theta, 1)
-	fmt.Println(rate, snr)
 }

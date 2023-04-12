@@ -1,6 +1,7 @@
 package main
 
 import (
+	cmat "RIS_SIMULATOR/reducedComplex"
 	"encoding/csv"
 	"fmt"
 	"log"
@@ -175,9 +176,9 @@ func (s *Simulation) InputPositions() {
 		}
 		list_positions = append(list_positions, position)
 	}
-	for _, v := range list_positions {
+	/*for _, v := range list_positions {
 		fmt.Println(v)
-	}
+	}*/
 	s.Positions = list_positions
 
 }
@@ -195,7 +196,27 @@ func (s *Simulation) rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 	return rate
 }
 
-func (s *Simulation) MIMO_Rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
+func (s *Simulation) Run() []cmat.Cmatrix {
+	clusters := GenerateClusters(s)
+	h := s.H_channel(clusters)
+	g := s.G_channel()
+	list := []cmat.Cmatrix{h, g}
+	/*	for _, update := range s.Positions {
+			s.Ris.xyz = update.ris
+			s.Tx.xyz = update.tx
+			s.Rx.xyz = update.rx
+			h = s.H_channel(clusters)
+			list = append(list, h)
+			g = s.G_channel()
+			list = append(list, g)
+
+		}
+	*/
+	return list
+
+}
+
+/*func (s *Simulation) MIMO_Rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 	var temp1 mat.CDense
 	var temp2 mat.CDense
 	rate := 0.0
@@ -213,4 +234,4 @@ func (s *Simulation) MIMO_Rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 
 	return rate
 
-}
+}*/

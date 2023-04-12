@@ -40,7 +40,7 @@ func GenerateClusters(s *Simulation) []Cluster {
 		GenerateCoordinates(&Clusters[i], s)
 	}
 
-	return []Cluster{}
+	return Clusters
 
 }
 

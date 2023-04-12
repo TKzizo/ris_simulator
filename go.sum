@@ -1,0 +1,4 @@
+gitlab.eurecom.fr/ris-esi/gonum v0.0.0-20230313084811-030bb747c7dd h1:5+OMyo05Rq8Oe5VsH3KY6SQUolrhuZCy4TaaOEhh0z8=
+gitlab.eurecom.fr/ris-esi/gonum v0.0.0-20230313084811-030bb747c7dd/go.mod h1:73TDxJfAAHeA8Mk9mf8NlIppyhQNo5GLTcYeqgo2lvY=
+golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0 h1:LGJsf5LRplCck6jUCH3dBL2dmycNruWNF5xugkSlfXw=
+golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=

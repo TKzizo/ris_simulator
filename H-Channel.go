@@ -64,7 +64,7 @@ func HLos(s *Simulation) cmat.Cmatrix {
 
 	for x := 0; x < dx; x++ {
 		for y := 0; y < dy; y++ {
-			AR_ris[x*dx+dy] = cmplx.Exp(
+			AR_ris[x*dx+y] = cmplx.Exp(
 				1i * complex(s.k*s.Ris.dis*(float64(x)*math.Sin(s.Ris.Theta_Tx)+float64(y)*math.Sin(s.Ris.Phi_Tx)*math.Cos(s.Ris.Theta_Tx)), 0))
 		}
 	}
@@ -135,7 +135,7 @@ func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 			}
 			ge[index] = Ge(scatterer.Theta_RIS)
 			attenuation[index] = L(s, sf, false, s.Ris.xyz, s.Tx.xyz, scatterer.xyz)
-			beta[index] = complex(sf.Rand()/math.Sqrt(2), sf.Rand()/math.Sqrt(2))
+			beta[index] = complex(rand.Float64()/math.Sqrt(2), rand.Float64()/math.Sqrt(2))
 			index++
 		}
 	}
@@ -148,6 +148,8 @@ func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 
 	for i := 0; i < nbr_scatterers; i++ {
 		val := beta[i] * complex(math.Sqrt(ge[i]*attenuation[i]), 0)
+		//fmt.Println("beta: ", beta[i], " ge: ", ge[i], " att: ", attenuation[i])
+		//fmt.Println("val: ", val)
 		for x := 0; x < s.Tx.N; x++ {
 			for y := 0; y < s.Ris.N; y++ {
 				tmp.Data[y][x] = val * AR_cs_ris.Data[i][y] * AR_cs_tx.Data[i][x]
