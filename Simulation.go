@@ -201,17 +201,17 @@ func (s *Simulation) Run() []cmat.Cmatrix {
 	h := s.H_channel(clusters)
 	g := s.G_channel()
 	list := []cmat.Cmatrix{h, g}
-	/*	for _, update := range s.Positions {
-			s.Ris.xyz = update.ris
-			s.Tx.xyz = update.tx
-			s.Rx.xyz = update.rx
-			h = s.H_channel(clusters)
-			list = append(list, h)
-			g = s.G_channel()
-			list = append(list, g)
+	for _, update := range s.Positions {
+		s.Ris.xyz = update.ris
+		s.Tx.xyz = update.tx
+		s.Rx.xyz = update.rx
+		h = s.H_channel(clusters)
+		list = append(list, h)
+		g = s.G_channel()
+		list = append(list, g)
 
-		}
-	*/
+	}
+
 	return list
 
 }

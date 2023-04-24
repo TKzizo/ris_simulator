@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
 
 func main() {
@@ -17,8 +16,8 @@ func main() {
 	list := simulation.Run()
 
 	for _, mat := range list {
-		//fmt.Println(mat)
-		fmt.Fprintln(os.Stderr, mat)
+		fmt.Println(mat)
+		//fmt.Fprintln(os.Stderr, mat)
 	}
 
 }
