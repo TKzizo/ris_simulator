@@ -60,16 +60,19 @@ func GenerateCoordinates(c *Cluster, s *Simulation) {
 	}
 
 	// generating subRay Coodinates
-	for i := 0; i < len(c.Scatterers); i++ {
-		c.Scatterers[i].xyz.x = c.xyz.x + position*math.Cos(DegToRad(c.mean_theta))*math.Cos(DegToRad(c.mean_phi))
+	i := 0
+	for i < len(c.Scatterers) {
+		c.Scatterers[i].xyz.x = s.Tx.xyz.x + position*math.Cos(DegToRad(c.Scatterers[i].Theta_TX))*math.Cos(DegToRad(c.Scatterers[i].Phi_TX))
 
-		c.Scatterers[i].xyz.y = c.xyz.y + position*math.Cos(DegToRad(c.mean_theta))*math.Sin(DegToRad(c.mean_phi))
+		c.Scatterers[i].xyz.y = s.Tx.xyz.y + position*math.Cos(DegToRad(c.Scatterers[i].Theta_TX))*math.Sin(DegToRad(c.Scatterers[i].Phi_TX))
 
-		c.Scatterers[i].xyz.z = c.xyz.z + position*math.Sin(DegToRad(c.mean_theta))
+		c.Scatterers[i].xyz.z = s.Tx.xyz.z + position*math.Sin(DegToRad(c.Scatterers[i].Theta_TX))
 
 		if c.Scatterers[i].xyz.z > s.Env.height || c.Scatterers[i].xyz.z < 0 || c.Scatterers[i].xyz.y > s.Env.width || c.Scatterers[i].xyz.y < 0 || c.Scatterers[i].xyz.x > s.Env.length || c.Scatterers[i].xyz.x < 0 {
 			c.Scatterers = ignoreScatterer(c.Scatterers, i)
+			continue
 		}
+		i++
 	}
 
 	// We need to have at least one Scatterer
@@ -93,6 +96,9 @@ func GenerateAngles(c *Cluster) {
 }
 
 func ignoreScatterer(scatterers []Scatterer, index int) []Scatterer {
-	scatterers[index] = scatterers[len(scatterers)-1]
-	return scatterers
+	l := scatterers[:len(scatterers)-1]
+	if index < len(l) {
+		l[index] = scatterers[len(scatterers)-1]
+	}
+	return l
 }

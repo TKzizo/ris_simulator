@@ -2,13 +2,8 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
-	"encoding/csv"
-	"fmt"
-	"log"
 	"math"
 	"math/cmplx"
-	"os"
-	"strconv"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -49,7 +44,7 @@ type Simulation struct {
 }
 
 func (s *Simulation) Setup() {
-	s.Lambda = 3.0 / 10 * s.Frequency // it's Simplified so it only supports GHz
+	s.Lambda = 3.0 / (10 * s.Frequency) // it's Simplified so it only supports GHz
 	s.k = 2 * math.Pi / s.Lambda
 
 	if s.Frequency == 28.0 {
@@ -83,104 +78,10 @@ func (s *Simulation) Setup() {
 	}
 
 	s.Ris.Setup(s.Lambda)
+	s.Rx.Setup(s.Lambda)
+	s.Tx.Setup(s.Lambda)
 	s.InputPositions()
-	//s.CheckPositioning()
-}
-
-func (s *Simulation) InputPositions() {
-	csvFile, err := os.Open("Positions.csv")
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println("Successfully Opened CSV file")
-	defer csvFile.Close()
-
-	csvLines, err := csv.NewReader(csvFile).ReadAll()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("number of lines", len(csvLines))
-	list_positions := []Updates{}
-
-	for _, line := range csvLines {
-		position := Updates{}
-		if v, err := strconv.ParseFloat(line[0], 64); err == nil && v <= s.Env.length && v >= 0 {
-			position.ris.x = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-		if v, err := strconv.ParseFloat(line[1], 64); err == nil && v <= s.Env.width && v >= 0 {
-			position.ris.y = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[2], 64); err == nil && v <= s.Env.height && v >= 0 {
-			position.ris.z = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[3], 64); err == nil && v <= s.Env.length && v >= 0 {
-			position.tx.x = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[4], 64); err == nil && v <= s.Env.width && v >= 0 {
-			position.tx.y = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[5], 64); err == nil && v <= s.Env.height && v >= 0 {
-			position.tx.z = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[6], 64); err == nil && v <= s.Env.length && v >= 0 {
-			position.rx.x = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[7], 64); err == nil && v <= s.Env.width && v >= 0 {
-			position.rx.y = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[8], 64); err == nil && v <= s.Env.height && v >= 0 {
-			position.rx.z = v
-		} else {
-			fmt.Println("Position Over-Boundries")
-			continue
-		}
-
-		if v, err := strconv.ParseFloat(line[9], 64); err == nil {
-			if v == 1 {
-				position.los = true
-			} else {
-				position.los = false
-			}
-		}
-		list_positions = append(list_positions, position)
-	}
-	/*for _, v := range list_positions {
-		fmt.Println(v)
-	}*/
-	s.Positions = list_positions
-
+	//s.CheckPositioning() // To apply the 3GPP standards
 }
 
 func (s *Simulation) rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
@@ -196,23 +97,31 @@ func (s *Simulation) rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 	return rate
 }
 
-func (s *Simulation) Run() []cmat.Cmatrix {
+func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
 	clusters := GenerateClusters(s)
 	h := s.H_channel(clusters)
 	g := s.G_channel()
-	list := []cmat.Cmatrix{h, g}
-	for _, update := range s.Positions {
-		s.Ris.xyz = update.ris
-		s.Tx.xyz = update.tx
-		s.Rx.xyz = update.rx
-		h = s.H_channel(clusters)
-		list = append(list, h)
-		g = s.G_channel()
-		list = append(list, g)
+	//fmt.Println(s.Ris)
+	//fmt.Println(s.Tx)
+	//fmt.Println(s.Rx)
+	//fmt.Scanln()
+	//fmt.Println(h.Data)
+	//fmt.Println(g.Data)
 
-	}
+	//list := []cmat.Cmatrix{h, g}
+	// Re-run the calculation for every position of the user
+	/*	for _, update := range s.Positions {
+			s.Ris.xyz = update.ris
+			s.Tx.xyz = update.tx
+			s.Rx.xyz = update.rx
+			h = s.H_channel(clusters)
+			list = append(list, h)
+			g = s.G_channel()
+			list = append(list, g)
 
-	return list
+		}
+	*/
+	return &h, &g
 
 }
 

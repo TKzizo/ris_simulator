@@ -4,6 +4,7 @@ import (
 	cmat "RIS_SIMULATOR/reducedComplex"
 	"math"
 	"math/cmplx"
+	"time"
 
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
@@ -14,20 +15,20 @@ func (s *Simulation) G_channel() cmat.Cmatrix {
 	s.Ris.Theta_Rx = float64(sign(s.Rx.xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Rx.xyz.z-s.Ris.xyz.z)/Distance(s.Ris.xyz, s.Rx.xyz))
 	//s.Rx.Theta_RIS = float64(sign(s.Ris.xyz.z, s.Rx.xyz.z)) * math.Asin(math.Abs(s.Rx.xyz.z-s.Ris.xyz.z)/Distance(s.Ris.xyz, s.Rx.xyz))
 
+	s.Rx.Phi_RIS = DegToRad(math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + rand.Float64()*180 - 90)
+	s.Rx.Theta_RIS = DegToRad(math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + rand.Float64()*180 - 90)
 	if s.Broadside == 0 { //Side Wall
 		s.Ris.Phi_Rx = float64(sign(s.Ris.xyz.x, s.Rx.xyz.x)) * math.Atan2(math.Abs(s.Rx.xyz.x-s.Ris.xyz.x), math.Abs(s.Rx.xyz.y-s.Ris.xyz.y))
 
-		s.Rx.Phi_RIS = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + rand.Float64()*180 - 90
 		//s.Rx.Phi_RIS = float64(sign(s.Ris.xyz.y, s.Rx.xyz.y)) * math.Atan2(math.Abs(s.Rx.xyz.y-s.Ris.xyz.y), math.Abs(s.Rx.xyz.x-s.Ris.xyz.x))
 	} else if s.Broadside == 1 { // Opposite wall
 		s.Ris.Phi_Rx = float64(sign(s.Rx.xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Rx.xyz.y), math.Abs(s.Rx.xyz.y))
 		//s.Rx.Phi_RIS = float64(sign(s.Rx.xyz.x, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Rx.xyz.y-s.Ris.xyz.z), math.Abs(s.Rx.xyz.x-s.Ris.xyz.x))
-		s.Rx.Phi_RIS = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + rand.Float64()*180 - 90
 
 	}
 
 	AR_rx_ris := cmat.Cmatrix{}
-	AR_rx_ris.Init(s.Ris.N, s.Tx.N)
+	AR_rx_ris.Init(s.Ris.N, s.Rx.N)
 
 	dx := int(math.Sqrt(float64(s.Ris.N)))
 	dy := dx
@@ -42,12 +43,12 @@ func (s *Simulation) G_channel() cmat.Cmatrix {
 		}
 	}
 
-	if s.Tx.Type == 0 {
-		for x := 0; x < s.Tx.N; x++ {
+	if s.Rx.Type == 0 {
+		for x := 0; x < s.Rx.N; x++ {
 			AR_rx[x] = cmplx.Exp(1i * complex(s.k*s.Rx.dis*(float64(x)*math.Sin(s.Rx.Phi_RIS)*math.Cos(s.Rx.Theta_RIS)), 0))
 		}
-	} else if s.Tx.Type == 1 {
-		dx := int(math.Sqrt(float64(s.Ris.N)))
+	} else if s.Rx.Type == 1 {
+		dx := int(math.Sqrt(float64(s.Rx.N)))
 		dy := dx
 
 		for x := 0; x < dx; x++ {
@@ -56,18 +57,18 @@ func (s *Simulation) G_channel() cmat.Cmatrix {
 			}
 		}
 	}
-
 	for x := 0; x < len(AR_rx); x++ {
 		for y := 0; y < len(AR_ris); y++ {
 			AR_rx_ris.Data[y][x] = AR_rx[x] * AR_ris[y]
 		}
 	}
+	random_src := rand.NewSource(uint64(time.Now().Unix()))
+	random_src = rand.NewSource(1)
+	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: random_src} // Uniforma variable
 
-	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(1)} // Uniforma variable
-
-	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_LOS, 2), Src: rand.NewSource(1)} // variable loi normale for shadow fading
+	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_LOS, 2), Src: random_src} // variable loi normale for shadow fading
 	ge := Ge(s.Ris.Theta_Rx)
 	attenuation := L(s, sf, true, s.Ris.xyz, s.Rx.xyz)
 
-	return cmat.Scale(AR_rx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
+	return cmat.Transpose(cmat.Scale(AR_rx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0))))
 }

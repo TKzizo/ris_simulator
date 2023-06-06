@@ -1,5 +1,7 @@
 package reducedcomplex
 
+import "fmt"
+
 type Cmatrix struct {
 	Row, Col int
 	Data     [][]complex128
@@ -92,4 +94,13 @@ func Scale(a Cmatrix, s complex128) Cmatrix {
 	}
 
 	return c
+}
+
+func (c Cmatrix) String() string {
+	fmt.Printf("Rows: %s,Cols: %s\n", c.Row, c.Col)
+	ret := ""
+	for _, line := range c.Data {
+		ret = ret + fmt.Sprintln(line)
+	}
+	return ret
 }

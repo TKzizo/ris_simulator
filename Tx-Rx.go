@@ -8,3 +8,9 @@ type Tx_Rx struct {
 	Theta_RIS float64
 	Phi_RIS   float64
 }
+
+func (r *Tx_Rx) Setup(Lambda float64) {
+	if r.dis == 0.0 {
+		r.dis = Lambda / 2
+	}
+}

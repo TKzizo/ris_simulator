@@ -12,7 +12,8 @@ type RIS struct {
 }
 
 func (r *RIS) Setup(Lambda float64) {
-	if r.N == 0 {
+
+	if r.N == 0 { // TO be removed since sim must precise the number of patches
 		r.N = 256
 	}
 	if r.dis == 0.0 {

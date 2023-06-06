@@ -2,7 +2,11 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
+	"log"
 	"math"
+	"net"
+	"os"
+	"strconv"
 
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/mat"
@@ -63,4 +67,62 @@ func cmat2cdense(matr cmat.Cmatrix) *mat.CDense {
 
 	}
 	return mat.NewCDense(matr.Row, matr.Col, data)
+}
+
+func complextoString(c complex128) string {
+	bitSize := 128
+	if bitSize != 64 && bitSize != 128 {
+		panic("invalid bitSize")
+	}
+	bitSize >>= 1 // complex64 uses float32 internally
+
+	// Check if imaginary part has a sign. If not, add one.
+	im := strconv.FormatFloat(imag(c), 'e', 4, bitSize)
+	if im[0] != '+' && im[0] != '-' {
+		im = "+" + im
+	}
+
+	return strconv.FormatFloat(real(c), 'e', 4, bitSize) + im + "i"
+
+}
+
+func setupSocket(addr string) {
+	var SockAddr string = addr
+
+	os.Remove(SockAddr)
+	socket, err := net.Listen("unix", SockAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for {
+		// Accept an incoming connection.
+		conn, err := socket.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Handle the connection in a separate goroutine.
+		go func(conn net.Conn) {
+			defer conn.Close()
+			// Create a buffer for incoming data.
+			buf := make([]byte, 4096)
+
+			// Read data from the connection.
+			for {
+				n, err := conn.Read(buf)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// WE NEED TO GENERATE BIG CHUNKS OF DATA AND SEND IT
+				// BEFORE THAT WE NEED TO CHANGE ITS TYPE FROM COMPLEX TO BYTE ??
+				// AND CONFIRM RECEIVING IT
+				// Echo the data back to the connection.
+				_, err = conn.Write(buf[:n])
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}(conn)
+	}
+
 }

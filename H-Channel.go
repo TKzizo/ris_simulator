@@ -43,14 +43,23 @@ func (s *Simulation) H_channel(clusters []Cluster) cmat.Cmatrix {
 			}
 		}
 	}
-
-	return cmat.Add(HLos(s), HNLos(s, clusters))
+	hnlos := HNLos(s, clusters)
+	hlos := HLos(s)
+	//fmt.Println(hnlos)
+	//fmt.Scanln()
+	m := cmat.Add(hlos, hnlos)
+	//	fmt.Println(m.Data[0][0], hlos.Data[0][0], hnlos.Data[0][0])
+	//	fmt.Scanln()
+	return m
 }
 
 func HLos(s *Simulation) cmat.Cmatrix {
 	//Ih_Ris_tx := distuv.Bernoulli{P: Determine_Pb(s.Ris.xyz, s.Tx.xyz), Src: rand.NewSource(rand.Uint64())} //bernoulli variable
-	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: rand.NewSource(uint64(time.Now().Unix()))} // shadow phase
-	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_LOS, 2), Src: rand.NewSource(uint64(time.Now().Unix()))}
+	random_src := rand.NewSource(uint64(time.Now().Unix()))
+	//random_src := rand.NewSource(1)
+	eta := distuv.Uniform{Min: 0, Max: 2 * math.Pi, Src: random_src} // shadow phase
+	//fmt.Println(random_src)
+	sf := distuv.Normal{Mu: 0, Sigma: math.Pow(s.sigma_LOS, 2), Src: random_src}
 	ge := Ge(s.Ris.Theta_Tx)
 	attenuation := math.Sqrt(L(s, sf, true, s.Ris.xyz, s.Tx.xyz) * ge)
 	AR_tx_ris := cmat.Cmatrix{}
@@ -68,13 +77,15 @@ func HLos(s *Simulation) cmat.Cmatrix {
 				1i * complex(s.k*s.Ris.dis*(float64(x)*math.Sin(s.Ris.Theta_Tx)+float64(y)*math.Sin(s.Ris.Phi_Tx)*math.Cos(s.Ris.Theta_Tx)), 0))
 		}
 	}
-
 	if s.Tx.Type == 0 {
 		for x := 0; x < s.Tx.N; x++ {
 			AR_tx[x] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(float64(x)*math.Sin(s.Tx.Phi_RIS)*math.Cos(s.Tx.Theta_RIS)), 0))
 		}
+		//		fmt.Println("The TX type: ", s.Tx.Type)
+		//		fmt.Println(AR_tx)
+		//		fmt.Scanln()
 	} else if s.Tx.Type == 1 {
-		dx := int(math.Sqrt(float64(s.Ris.N)))
+		dx := int(math.Sqrt(float64(s.Tx.N)))
 		dy := dx
 
 		for x := 0; x < dx; x++ {
@@ -82,14 +93,18 @@ func HLos(s *Simulation) cmat.Cmatrix {
 				AR_tx[x*dx+y] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(float64(x)*math.Sin(s.Tx.Phi_RIS)*math.Cos(s.Tx.Theta_RIS)+float64(y)*math.Sin(s.Tx.Theta_RIS)), 0))
 			}
 		}
+		//		fmt.Println("The TX type: ", s.Tx.Type)
+		//		fmt.Println(AR_tx)
+		//		fmt.Scanln()
 	}
-
+	//fmt.Println(AR_tx)
 	for x := 0; x < len(AR_tx); x++ {
 		for y := 0; y < len(AR_ris); y++ {
 			AR_tx_ris.Data[y][x] = AR_tx[x] * AR_ris[y]
 		}
 	}
-
+	//	fmt.Println(cmat.Scale(AR_tx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0))))
+	//	fmt.Scanln()
 	return cmat.Scale(AR_tx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
 }
 
@@ -158,6 +173,8 @@ func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 
 		c = cmat.Add(tmp, c)
 	}
+	//fmt.Println(cmat.Scale(c, complex(math.Sqrt(1.0/float64(nbr_scatterers)), 0)))
+	//fmt.Scanln()
 
 	return cmat.Scale(c, complex(math.Sqrt(1.0/float64(nbr_scatterers)), 0))
 }
