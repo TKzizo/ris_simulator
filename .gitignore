@@ -1,4 +1,4 @@
-data/
+data/*
 Simulators-results-comparison.ipynb
 RIS_SIMULATOR
 Positions.csv
