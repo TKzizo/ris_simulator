@@ -10,14 +10,19 @@ import (
 func main() {
 
 	ris := RIS{N: 256, xyz: Coordinates{x: 40, y: 50, z: 2}}
-	tx := Tx_Rx{N: 1, Type: 0, xyz: Coordinates{x: 0, y: 25, z: 2}}
-	rx := Tx_Rx{N: 1, Type: 0, xyz: Coordinates{x: 38, y: 48, z: 1}}
+	tx := Tx_Rx{N: 16, Type: 0, xyz: Coordinates{x: 0, y: 25, z: 2}}
+	rx := Tx_Rx{N: 64, Type: 0, xyz: Coordinates{x: 38, y: 48, z: 1}}
 
-	simulation := Simulation{Ris: ris, Tx: tx, Rx: rx, Frequency: 28.0, Env: Environment{75.0, 50.0, 3.5}}
+	simulation := Simulation{
+		Ris:       ris,
+		Tx:        tx,
+		Rx:        rx,
+		Frequency: 28.0,
+		Env:       Environment{75.0, 50.0, 3.5}}
 
 	simulation.Setup()
-	// H, G := simulation.Run()
-	generateData(simulation, 1000)
+	//_, _ = simulation.Run()
+	generateData(simulation, 1)
 }
 
 func generateData(simulation Simulation, nbr_itr int) {

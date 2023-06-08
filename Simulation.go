@@ -98,29 +98,19 @@ func (s *Simulation) rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 }
 
 func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
-	clusters := GenerateClusters(s)
-	h := s.H_channel(clusters)
-	g := s.G_channel()
-	//fmt.Println(s.Ris)
-	//fmt.Println(s.Tx)
-	//fmt.Println(s.Rx)
-	//fmt.Scanln()
-	//fmt.Println(h.Data)
-	//fmt.Println(g.Data)
-
+	var h, g cmat.Cmatrix
 	//list := []cmat.Cmatrix{h, g}
 	// Re-run the calculation for every position of the user
-	/*	for _, update := range s.Positions {
-			s.Ris.xyz = update.ris
-			s.Tx.xyz = update.tx
-			s.Rx.xyz = update.rx
-			h = s.H_channel(clusters)
-			list = append(list, h)
-			g = s.G_channel()
-			list = append(list, g)
-
-		}
-	*/
+	for _, update := range s.Positions {
+		clusters := GenerateClusters(s)
+		s.Ris.xyz = update.ris
+		s.Tx.xyz = update.tx
+		s.Rx.xyz = update.rx
+		h = s.H_channel(clusters)
+		//list = append(list, h)
+		g = s.G_channel()
+		//list = append(list, g)
+	}
 	return &h, &g
 
 }
