@@ -127,12 +127,12 @@ func (s *Simulation) setupSockets() {
 		log.Fatal(err)
 	}
 
-	go connHandler(socketRIS)
-	go connHandler(socketTX)
-	go connHandler(socketRX)
+	go connHandler(socketRIS, "RIS")
+	go connHandler(socketTX, "TX")
+	go connHandler(socketRX, "RX")
 }
 
-func connHandler(socket net.Listener) {
+func connHandler(socket net.Listener, agent string) {
 
 	for {
 		// Accept an incoming connection.
@@ -145,8 +145,15 @@ func connHandler(socket net.Listener) {
 		go func(conn net.Conn) {
 			defer conn.Close()
 			// Create a buffer for incoming data.
-			buf := make([]byte, 4096)
-
+			// The max size of 1 iteration of MIMO is currently 500KB per channel
+			// For the tx and Rx we just gonna need 30B for positionf and type map
+			var buf []byte
+			switch agent {
+			case "RIS":
+				buf = make([]byte, 1024*500*2)
+			default:
+				buf = make([]byte, 30)
+			}
 			// Read data from the connection.
 			for {
 				n, err := conn.Read(buf)
