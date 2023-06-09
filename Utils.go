@@ -2,10 +2,8 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
-	"log"
 	"math"
-	"net"
-	"os"
+	"math/cmplx"
 	"strconv"
 
 	"golang.org/x/exp/rand"
@@ -86,43 +84,35 @@ func complextoString(c complex128) string {
 
 }
 
-func setupSocket(addr string) {
-	var SockAddr string = addr
+func rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 
-	os.Remove(SockAddr)
-	socket, err := net.Listen("unix", SockAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for {
-		// Accept an incoming connection.
-		conn, err := socket.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
+	var temp1 mat.CDense
+	var temp2 mat.CDense
+	rate := 0.0
 
-		// Handle the connection in a separate goroutine.
-		go func(conn net.Conn) {
-			defer conn.Close()
-			// Create a buffer for incoming data.
-			buf := make([]byte, 4096)
+	temp1.Mul(G.T(), Theta)
+	temp2.Mul(&temp1, &H)
+	rate = math.Log2(math.Pow(cmplx.Abs(temp2.At(0, 0)), 2) * Pt / P_n)
 
-			// Read data from the connection.
-			for {
-				n, err := conn.Read(buf)
-				if err != nil {
-					log.Fatal(err)
-				}
-				// WE NEED TO GENERATE BIG CHUNKS OF DATA AND SEND IT
-				// BEFORE THAT WE NEED TO CHANGE ITS TYPE FROM COMPLEX TO BYTE ??
-				// AND CONFIRM RECEIVING IT
-				// Echo the data back to the connection.
-				_, err = conn.Write(buf[:n])
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-		}(conn)
-	}
-
+	return rate
 }
+
+/*func (s *Simulation) MIMO_Rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
+	var temp1 mat.CDense
+	var temp2 mat.CDense
+	rate := 0.0
+
+	temp1.Mul(G.T(), Theta)
+	temp2.Mul(&temp1, &H)
+	temp1.Mul(temp2.H(), &temp2)
+	for i := 0; i < temp1.RawCMatrix().Rows; i++ {
+		temp1.Set(i, i, temp1.At(i, i)+complex(1, 0))
+	}
+	temp1.Scale(complex(Pt/P_n, 0), &temp1)
+	var lu cLU
+	lu.Factorize(temp1)
+	rate = lu.Det()
+
+	return rate
+
+}*/

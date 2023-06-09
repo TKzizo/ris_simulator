@@ -2,10 +2,10 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
+	"log"
 	"math"
-	"math/cmplx"
-
-	"gonum.org/v1/gonum/mat"
+	"net"
+	"os"
 )
 
 const (
@@ -80,21 +80,9 @@ func (s *Simulation) Setup() {
 	s.Ris.Setup(s.Lambda)
 	s.Rx.Setup(s.Lambda)
 	s.Tx.Setup(s.Lambda)
+
 	s.InputPositions()
 	//s.CheckPositioning() // To apply the 3GPP standards
-}
-
-func (s *Simulation) rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
-
-	var temp1 mat.CDense
-	var temp2 mat.CDense
-	rate := 0.0
-
-	temp1.Mul(G.T(), Theta)
-	temp2.Mul(&temp1, &H)
-	rate = math.Log2(math.Pow(cmplx.Abs(temp2.At(0, 0)), 2) * Pt / P_n)
-
-	return rate
 }
 
 func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
@@ -115,22 +103,62 @@ func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
 
 }
 
-/*func (s *Simulation) MIMO_Rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
-	var temp1 mat.CDense
-	var temp2 mat.CDense
-	rate := 0.0
+func (s *Simulation) setupSockets() {
+	var risaddr string = "/tmp/ris.sock"
+	var txaddr string = "/tmp/tx.sock"
+	var rxaddr string = "/tmp/rx.sock"
 
-	temp1.Mul(G.T(), Theta)
-	temp2.Mul(&temp1, &H)
-	temp1.Mul(temp2.H(), &temp2)
-	for i := 0; i < temp1.RawCMatrix().Rows; i++ {
-		temp1.Set(i, i, temp1.At(i, i)+complex(1, 0))
+	// Remove socket if it already exists
+	os.Remove(risaddr)
+	os.Remove(txaddr)
+	os.Remove(rxaddr)
+
+	// Create Listner for each socket
+	socketRIS, err := net.Listen("unix", risaddr)
+	if err != nil {
+		log.Fatal(err)
 	}
-	temp1.Scale(complex(Pt/P_n, 0), &temp1)
-	var lu cLU
-	lu.Factorize(temp1)
-	rate = lu.Det()
+	socketTX, err := net.Listen("unix", txaddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	socketRX, err := net.Listen("unix", rxaddr)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	return rate
+	go connHandler(socketRIS)
+	go connHandler(socketTX)
+	go connHandler(socketRX)
+}
 
-}*/
+func connHandler(socket net.Listener) {
+
+	for {
+		// Accept an incoming connection.
+		conn, err := socket.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Handle the connection in a separate goroutine.
+		go func(conn net.Conn) {
+			defer conn.Close()
+			// Create a buffer for incoming data.
+			buf := make([]byte, 4096)
+
+			// Read data from the connection.
+			for {
+				n, err := conn.Read(buf)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// Echo the data back to the connection.
+				_, err = conn.Write(buf[:n])
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}(conn)
+	}
+}
