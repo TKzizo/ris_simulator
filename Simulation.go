@@ -80,7 +80,7 @@ func (s *Simulation) Setup() {
 	s.Ris.Setup(s.Lambda)
 	s.Rx.Setup(s.Lambda)
 	s.Tx.Setup(s.Lambda)
-
+	s.setupSockets()
 	s.InputPositions()
 	//s.CheckPositioning() // To apply the 3GPP standards
 }
