@@ -2,6 +2,8 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
+	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net"
@@ -14,6 +16,13 @@ const (
 	Pt   float64 = 0.05        // Power of transmitter
 	P_n  float64 = 0.000000001 // variance of noise at the receiver
 )
+
+type AgentToRIC struct {
+	Type string `json:"Type"`
+	// The first three values represent the position x,y,z of the RAN
+	// if the Type is RIS then the following values would be the H,G values
+	Data []float64 `json:"Data"`
+}
 
 type Updates struct {
 	ris Coordinates
@@ -41,6 +50,9 @@ type Simulation struct {
 	//channel    chan Updates
 	Broadside int8 // 0: SideWall 1: OppositeWall
 	Positions []Updates
+	RisChannl chan []float64
+	TxChannl  chan []float64
+	RxChannl  chan []float64
 }
 
 func (s *Simulation) Setup() {
@@ -80,7 +92,7 @@ func (s *Simulation) Setup() {
 	s.Ris.Setup(s.Lambda)
 	s.Rx.Setup(s.Lambda)
 	s.Tx.Setup(s.Lambda)
-	s.setupSockets()
+	s.RisChannl, s.TxChannl, s.RxChannl = s.setupSockets()
 	s.InputPositions()
 	//s.CheckPositioning() // To apply the 3GPP standards
 }
@@ -103,7 +115,7 @@ func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
 
 }
 
-func (s *Simulation) setupSockets() {
+func (s *Simulation) setupSockets() (chan []float64, chan []float64, chan []float64) {
 	var risaddr string = "/tmp/ris.sock"
 	var txaddr string = "/tmp/tx.sock"
 	var rxaddr string = "/tmp/rx.sock"
@@ -126,13 +138,18 @@ func (s *Simulation) setupSockets() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	risChannl := make(chan []float64)
+	txChannl := make(chan []float64)
+	rxChannl := make(chan []float64)
 
-	go connHandler(socketRIS, "RIS")
-	go connHandler(socketTX, "TX")
-	go connHandler(socketRX, "RX")
+	go connHandler(socketRIS, "RIS", risChannl)
+	go connHandler(socketTX, "TX", txChannl)
+	go connHandler(socketRX, "RX", rxChannl)
+
+	return risChannl, txChannl, rxChannl
 }
 
-func connHandler(socket net.Listener, agent string) {
+func connHandler(socket net.Listener, agent string, channl chan []float64) {
 
 	for {
 		// Accept an incoming connection.
@@ -142,20 +159,32 @@ func connHandler(socket net.Listener, agent string) {
 		}
 
 		// Handle the connection in a separate goroutine.
-		go func(conn net.Conn) {
+		go func(conn net.Conn, channl chan []float64) {
 			defer conn.Close()
 			// Create a buffer for incoming data.
-			// The max size of 1 iteration of MIMO is currently 500KB per channel
+			// The max size of 1 iteration of MIMO with 256 patch, 16 tx antennas and 64 rx antennas is currently 500KB
 			// For the tx and Rx we just gonna need 30B for positionf and type map
 			var buf []byte
 			switch agent {
 			case "RIS":
-				buf = make([]byte, 1024*500*2)
+				buf = make([]byte, 1024*500)
 			default:
-				buf = make([]byte, 30)
+				buf = make([]byte, 100)
 			}
-			// Read data from the connection.
+			// Write Data to connection.
+			encoder := json.NewEncoder(conn)
+
 			for {
+				select {
+				case v := <-channl:
+					msg := AgentToRIC{Type: agent, Data: v}
+					encoder.Encode(msg)
+				}
+				if buf[0] == byte(0) {
+					fmt.Println("nothing received")
+				}
+			}
+			/*for {
 				n, err := conn.Read(buf)
 				if err != nil {
 					log.Fatal(err)
@@ -165,7 +194,7 @@ func connHandler(socket net.Listener, agent string) {
 				if err != nil {
 					log.Fatal(err)
 				}
-			}
-		}(conn)
+			}*/
+		}(conn, channl)
 	}
 }

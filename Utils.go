@@ -116,3 +116,26 @@ func rate(H, G mat.CDense, Theta mat.CDiagonal) float64 {
 	return rate
 
 }*/
+
+func destructure(m cmat.Cmatrix) []float64 {
+
+	v := make([]float64, m.Row*m.Col*2)
+
+	for x := 0; x < m.Row; x++ {
+		for y := 0; y < m.Col; y++ {
+			index := (m.Col*x + y) * 2
+			v[index] = real(m.Data[x][y])
+			v[index+1] = imag(m.Data[x][y])
+		}
+	}
+
+	return v
+}
+func construct(bytes ...[]float64) []float64 {
+	var ret []float64
+	for _, b := range bytes {
+		ret = append(ret, b...)
+	}
+
+	return ret
+}
