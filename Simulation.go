@@ -24,6 +24,10 @@ type AgentToRIC struct {
 	Data []float64 `json:"Data"`
 }
 
+type RICToAgent struct {
+	Coefficients []float64 `json:"Coefficients`
+}
+
 type Updates struct {
 	ris Coordinates
 	rx  Coordinates
@@ -161,40 +165,36 @@ func connHandler(socket net.Listener, agent string, channl chan []float64) {
 		// Handle the connection in a separate goroutine.
 		go func(conn net.Conn, channl chan []float64) {
 			defer conn.Close()
-			// Create a buffer for incoming data.
-			// The max size of 1 iteration of MIMO with 256 patch, 16 tx antennas and 64 rx antennas is currently 500KB
-			// For the tx and Rx we just gonna need 30B for positionf and type map
-			var buf []byte
-			switch agent {
-			case "RIS":
-				buf = make([]byte, 1024*500)
-			default:
-				buf = make([]byte, 100)
-			}
+			/*	switch agent {
+				case "RIS":
+					buf = make([]byte, 1024*500)
+				default:
+					buf = make([]byte, 100)
+				}*/
 			// Write Data to connection.
 			encoder := json.NewEncoder(conn)
 
+			buf := make([]byte, 256*2*20) // 256 patch * real x imag * number of bytes
 			for {
 				select {
 				case v := <-channl:
 					msg := AgentToRIC{Type: agent, Data: v}
 					encoder.Encode(msg)
 				}
-				if buf[0] == byte(0) {
-					fmt.Println("nothing received")
-				}
-			}
-			/*for {
+				coef := RICToAgent{}
+				//dec := json.NewDecoder(conn)
+				//dec.Decode(&coef)
 				n, err := conn.Read(buf)
 				if err != nil {
 					log.Fatal(err)
 				}
-				// Echo the data back to the connection.
-				_, err = conn.Write(buf[:n])
-				if err != nil {
+				fmt.Println(buf[:n])
+				fmt.Println(string(buf[:n]))
+				if err := json.Unmarshal(buf[:n], &coef); err != nil {
 					log.Fatal(err)
 				}
-			}*/
+				fmt.Println(coef.Coefficients)
+			}
 		}(conn, channl)
 	}
 }

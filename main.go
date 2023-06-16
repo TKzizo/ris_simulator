@@ -28,7 +28,7 @@ func main() {
 	gd := destructure(*g)
 
 	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
-	simulation.TxChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
+	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
 	time.Sleep(2 * time.Second)
 	//generateData(simulation, 1)
 }
