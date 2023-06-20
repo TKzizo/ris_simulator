@@ -1,10 +1,6 @@
 package main
 
 import (
-	"encoding/csv"
-	"fmt"
-	"log"
-	"os"
 	"time"
 )
 
@@ -22,18 +18,26 @@ func main() {
 		Env:       Environment{75.0, 50.0, 3.5}}
 
 	simulation.Setup()
+	for {
+		list := simulation.Run()
+		for i, v := range simulation.Positions {
+			h := list[i*2]
+			g := list[i*2+1]
+			hd := destructure(h)
+			gd := destructure(g)
 
-	h, g := simulation.Run()
-	hd := destructure(*h)
-	gd := destructure(*g)
-
-	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
-	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
-	time.Sleep(2 * time.Second)
-	//generateData(simulation, 1)
+			//	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
+			//	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
+			simulation.RisChannl <- []float64{v.rx.x, v.rx.y, v.rx.z}
+			simulation.RisChannl <- hd
+			simulation.RisChannl <- gd
+			time.Sleep(2 * time.Second)
+			//generateData(simulation, 1)
+		}
+	}
 }
 
-func generateData(simulation Simulation, nbr_itr int) {
+/*func generateData(simulation Simulation, nbr_itr int) {
 
 	h := make([][]string, simulation.Ris.N*simulation.Tx.N)
 	for i := 0; i < len(h); i++ {
@@ -83,3 +87,4 @@ func generateData(simulation Simulation, nbr_itr int) {
 	csvwriter.Flush()
 	defer gcsv.Close()
 }
+*/

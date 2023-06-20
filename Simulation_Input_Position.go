@@ -13,7 +13,7 @@ func (s *Simulation) InputPositions() {
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println("Successfully Opened CSV file")
+	fmt.Println("Successfully Opened User Positions File")
 	defer csvFile.Close()
 
 	csvLines, err := csv.NewReader(csvFile).ReadAll()
@@ -21,7 +21,7 @@ func (s *Simulation) InputPositions() {
 		fmt.Println(err)
 	}
 
-	fmt.Println("number of lines", len(csvLines))
+	fmt.Println("number of User positions: ", len(csvLines))
 	list_positions := []Updates{}
 
 	for _, line := range csvLines {

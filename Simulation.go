@@ -8,6 +8,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"time"
 )
 
 const (
@@ -18,10 +19,9 @@ const (
 )
 
 type AgentToRIC struct {
-	Type string `json:"Type"`
-	// The first three values represent the position x,y,z of the RAN
-	// if the Type is RIS then the following values would be the H,G values
-	Data []float64 `json:"Data"`
+	Equipment string    `json:"Equipment"`
+	Field     string    `json:"Field`
+	Data      []float64 `json:"Data"`
 }
 
 type RICToAgent struct {
@@ -101,9 +101,9 @@ func (s *Simulation) Setup() {
 	//s.CheckPositioning() // To apply the 3GPP standards
 }
 
-func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
+func (s *Simulation) Run() []cmat.Cmatrix {
 	var h, g cmat.Cmatrix
-	//list := []cmat.Cmatrix{h, g}
+	list := []cmat.Cmatrix{}
 	// Re-run the calculation for every position of the user
 	for _, update := range s.Positions {
 		clusters := GenerateClusters(s)
@@ -111,11 +111,11 @@ func (s *Simulation) Run() (*cmat.Cmatrix, *cmat.Cmatrix) {
 		s.Tx.xyz = update.tx
 		s.Rx.xyz = update.rx
 		h = s.H_channel(clusters)
-		//list = append(list, h)
+		list = append(list, h)
 		g = s.G_channel()
-		//list = append(list, g)
+		list = append(list, g)
 	}
-	return &h, &g
+	return list
 
 }
 
@@ -165,35 +165,40 @@ func connHandler(socket net.Listener, agent string, channl chan []float64) {
 		// Handle the connection in a separate goroutine.
 		go func(conn net.Conn, channl chan []float64) {
 			defer conn.Close()
-			/*	switch agent {
-				case "RIS":
-					buf = make([]byte, 1024*500)
-				default:
-					buf = make([]byte, 100)
-				}*/
-			// Write Data to connection.
-			encoder := json.NewEncoder(conn)
 
 			buf := make([]byte, 256*2*20) // 256 patch * real x imag * number of bytes
-			for {
-				select {
-				case v := <-channl:
-					msg := AgentToRIC{Type: agent, Data: v}
-					encoder.Encode(msg)
-				}
+
+			err := conn.SetReadDeadline(time.Now().Add(40 * time.Millisecond))
+			if err != nil {
+				log.Fatal(err)
+			}
+			n, err := conn.Read(buf)
+			if err != nil {
+				fmt.Println(err, "Reading Ris Coefficients")
+			}
+			if n != 0 {
+				fmt.Print(string(buf))
 				coef := RICToAgent{}
-				//dec := json.NewDecoder(conn)
-				//dec.Decode(&coef)
-				n, err := conn.Read(buf)
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(buf[:n])
-				fmt.Println(string(buf[:n]))
 				if err := json.Unmarshal(buf[:n], &coef); err != nil {
-					log.Fatal(err)
+					log.Print(err, "received: ", n)
 				}
 				fmt.Println(coef.Coefficients)
+			}
+
+			var send string
+			for {
+				Fields := []string{"Position", "H", "G"}
+				for i := 0; i < len(Fields); i++ {
+					v := <-channl
+					msg := AgentToRIC{Equipment: agent, Field: Fields[i], Data: v}
+					marshaled_msg, err := json.Marshal(msg)
+					if err != nil {
+						log.Print(err)
+					}
+					send = send + string(marshaled_msg) + "\n"
+				}
+				_, _ = conn.Write([]byte(send))
+
 			}
 		}(conn, channl)
 	}
