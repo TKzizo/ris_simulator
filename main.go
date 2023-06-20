@@ -25,15 +25,17 @@ func main() {
 			g := list[i*2+1]
 			hd := destructure(h)
 			gd := destructure(g)
-
 			//	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
 			//	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
 			simulation.RisChannl <- []float64{v.rx.x, v.rx.y, v.rx.z}
 			simulation.RisChannl <- hd
 			simulation.RisChannl <- gd
-			time.Sleep(2 * time.Second)
+
+			time.Sleep(1 * time.Second)
 			//generateData(simulation, 1)
 		}
+
+		time.Sleep(10 * time.Second)
 	}
 }
 

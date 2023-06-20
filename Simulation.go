@@ -186,20 +186,19 @@ func connHandler(socket net.Listener, agent string, channl chan []float64) {
 			}
 
 			var send string
-			for {
-				Fields := []string{"Position", "H", "G"}
-				for i := 0; i < len(Fields); i++ {
-					v := <-channl
-					msg := AgentToRIC{Equipment: agent, Field: Fields[i], Data: v}
-					marshaled_msg, err := json.Marshal(msg)
-					if err != nil {
-						log.Print(err)
-					}
-					send = send + string(marshaled_msg) + "\n"
+			Fields := []string{"Position", "H", "G"}
+			for _, f := range Fields {
+				v := <-channl
+				msg := AgentToRIC{Equipment: agent, Field: f, Data: v}
+				marshaled_msg, err := json.Marshal(msg)
+				if err != nil {
+					log.Print(err)
 				}
-				_, _ = conn.Write([]byte(send))
-
+				send = send + string(marshaled_msg) + "\n"
 			}
+			fmt.Println(send)
+			_, _ = conn.Write([]byte(send))
+			//_, _ = conn.Write([]byte{1, 3, 5})
 		}(conn, channl)
 	}
 }
