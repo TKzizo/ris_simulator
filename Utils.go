@@ -2,8 +2,12 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
+	"encoding/csv"
+	"fmt"
+	"log"
 	"math"
 	"math/cmplx"
+	"os"
 	"strconv"
 
 	"golang.org/x/exp/rand"
@@ -138,4 +142,88 @@ func construct(bytes ...[]float64) []float64 {
 	}
 
 	return ret
+}
+
+func EvaluateCoeffs(nbr int, coef []float64) {
+
+	fd, err := os.Open("SNR.csv")
+	if err != nil {
+		log.Print(err)
+	}
+	csvwriter := csv.NewWriter(fd)
+
+	var simCoef []complex128
+	var CalculatedCoef []complex128
+	var RandomCoef []complex128
+	for _, value := range coef {
+		CalculatedCoef = append(CalculatedCoef, cmplx.Rect(1, value))
+		RandomCoef = append(RandomCoef, cmplx.Rect(1, rand.Float64()*2*math.Pi))
+
+	}
+
+	h := cmat.Transpose(SavedHG[nbr*2]).Data[0]
+
+	g := SavedHG[nbr*2+1].Data[0]
+	fmt.Println("Xapp Phases: ", coef)
+	simCoef = GetCoefficients(h, g)
+
+	rate := RateSISO(h, g, CalculatedCoef)
+	rate2 := RateSISO(h, g, RandomCoef)
+	rate3 := RateSISO(h, g, simCoef)
+	fmt.Println("Coefficients From xApp : ")
+	fmt.Println(CalculatedCoef[4:], "......")
+	fmt.Println("Coefficients From SIM : ")
+	fmt.Println(simCoef[4:], "......")
+
+	row := []string{strconv.FormatFloat(rate, 'f', -1, 64), strconv.FormatFloat(rate2, 'f', -1, 64), strconv.FormatFloat(rate3, 'f', -1, 64)}
+	fmt.Println("Rate with Optimal Coefficients :", rate)
+	fmt.Println("Rate with Random Coefficients :", rate2)
+	fmt.Println("Rate with Sim Coefficients :", rate3)
+	csvwriter.Write(row)
+	csvwriter.Flush()
+	fd.Close()
+
+}
+
+func RateSISO(H, G, Theta []complex128) float64 {
+
+	var temp []complex128
+	var res complex128
+	for i, v := range G {
+		temp = append(temp, v*Theta[i])
+	}
+
+	for i, v := range H {
+		res += temp[i] * v
+	}
+
+	return math.Log2(1 + math.Pow(cmplx.Abs(res), 2)*Pt/P_n)
+}
+
+func SNRSISO(H_channel []complex128, G_channel []complex128, RIS_Coefficients []complex128, P_t, P_n float64) (float64, float64) {
+	var temp []complex128
+	var res complex128
+	for i, v := range G_channel {
+		temp = append(temp, v*RIS_Coefficients[i])
+	}
+
+	for i, v := range H_channel {
+		res += temp[i] * v
+	}
+	return math.Log2(1 + math.Pow(cmplx.Abs(res), 2)*P_t/P_n), math.Pow(cmplx.Abs(res), 2) * P_t / P_n
+}
+
+func GetCoefficients(H, G []complex128) []complex128 {
+
+	Theta_ris := []complex128{}
+	fmt.Println("Sim Phases: ")
+	for i := 0; i < len(H); i++ {
+		phi_n := cmplx.Phase(H[i])
+		psi_n := cmplx.Phase(G[i])
+		fmt.Print(math.Remainder(-(phi_n+psi_n), 2*math.Pi), ", ")
+		Theta_ris = append(Theta_ris, cmplx.Rect(1, math.Remainder(-(phi_n+psi_n), 2*math.Pi)))
+	}
+
+	fmt.Println()
+	return Theta_ris
 }

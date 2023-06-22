@@ -1,12 +1,16 @@
 package main
 
 import (
+	cmat "RIS_SIMULATOR/reducedComplex"
+	"os"
 	"time"
 )
 
+var SavedHG []cmat.Cmatrix
+
 func main() {
 
-	ris := RIS{N: 4, xyz: Coordinates{x: 40, y: 50, z: 2}}
+	ris := RIS{N: 16, xyz: Coordinates{x: 40, y: 50, z: 2}}
 	tx := Tx_Rx{N: 1, Type: 0, xyz: Coordinates{x: 0, y: 25, z: 2}}
 	rx := Tx_Rx{N: 1, Type: 0, xyz: Coordinates{x: 38, y: 48, z: 1}}
 
@@ -18,8 +22,10 @@ func main() {
 		Env:       Environment{75.0, 50.0, 3.5}}
 
 	simulation.Setup()
+	list := simulation.Run()
+	_, _ = os.Create("SNR.csv")
+
 	for {
-		list := simulation.Run()
 		for i, v := range simulation.Positions {
 			h := list[i*2]
 			g := list[i*2+1]
@@ -27,16 +33,14 @@ func main() {
 			gd := destructure(g)
 			//	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
 			//	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
-			simulation.RisChannl <- []float64{v.rx.x, v.rx.y, v.rx.z}
-			simulation.RisChannl <- hd
-			simulation.RisChannl <- gd
-
+			simulation.RisChannl <- [][]float64{[]float64{v.rx.x, v.rx.y, v.rx.z}, hd, gd}
+			SavedHG = append(SavedHG, h, g)
 			time.Sleep(1 * time.Second)
 			//generateData(simulation, 1)
 		}
-
-		time.Sleep(10 * time.Second)
 	}
+
+	time.Sleep(10 * time.Second)
 }
 
 /*func generateData(simulation Simulation, nbr_itr int) {

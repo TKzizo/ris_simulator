@@ -8,13 +8,14 @@ import (
 	"math"
 	"net"
 	"os"
+	"sync"
 	"time"
 )
 
 const (
 	q    float64 = 0.283 // related to the gain
 	Gain float64 = math.Pi
-	Pt   float64 = 0.05        // Power of transmitter
+	Pt   float64 = 0.9         // Power of transmitter
 	P_n  float64 = 0.000000001 // variance of noise at the receiver
 )
 
@@ -27,6 +28,8 @@ type AgentToRIC struct {
 type RICToAgent struct {
 	Coefficients []float64 `json:"Coefficients`
 }
+
+type RISCHANNL [][]float64
 
 type Updates struct {
 	ris Coordinates
@@ -54,7 +57,7 @@ type Simulation struct {
 	//channel    chan Updates
 	Broadside int8 // 0: SideWall 1: OppositeWall
 	Positions []Updates
-	RisChannl chan []float64
+	RisChannl chan RISCHANNL
 	TxChannl  chan []float64
 	RxChannl  chan []float64
 }
@@ -96,7 +99,7 @@ func (s *Simulation) Setup() {
 	s.Ris.Setup(s.Lambda)
 	s.Rx.Setup(s.Lambda)
 	s.Tx.Setup(s.Lambda)
-	s.RisChannl, s.TxChannl, s.RxChannl = s.setupSockets()
+	s.RisChannl /* s.TxChannl, s.RxChannl*/ = s.setupSockets()
 	s.InputPositions()
 	//s.CheckPositioning() // To apply the 3GPP standards
 }
@@ -119,7 +122,7 @@ func (s *Simulation) Run() []cmat.Cmatrix {
 
 }
 
-func (s *Simulation) setupSockets() (chan []float64, chan []float64, chan []float64) {
+func (s *Simulation) setupSockets() chan RISCHANNL /*, chan []float64, chan []float64*/ {
 	var risaddr string = "/tmp/ris.sock"
 	var txaddr string = "/tmp/tx.sock"
 	var rxaddr string = "/tmp/rx.sock"
@@ -134,27 +137,28 @@ func (s *Simulation) setupSockets() (chan []float64, chan []float64, chan []floa
 	if err != nil {
 		log.Fatal(err)
 	}
-	socketTX, err := net.Listen("unix", txaddr)
+	/*socketTX, err := net.Listen("unix", txaddr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	socketRX, err := net.Listen("unix", rxaddr)
 	if err != nil {
 		log.Fatal(err)
-	}
-	risChannl := make(chan []float64)
-	txChannl := make(chan []float64)
-	rxChannl := make(chan []float64)
+	}*/
+	risChannl := make(chan RISCHANNL)
+	//txChannl := make(chan []float64)
+	//rxChannl := make(chan []float64)
 
 	go connHandler(socketRIS, "RIS", risChannl)
-	go connHandler(socketTX, "TX", txChannl)
-	go connHandler(socketRX, "RX", rxChannl)
+	//go connHandler(socketTX, "TX", txChannl)
+	//go connHandler(socketRX, "RX", rxChannl)
 
-	return risChannl, txChannl, rxChannl
+	return risChannl //, txChannl, rxChannl
 }
 
-func connHandler(socket net.Listener, agent string, channl chan []float64) {
-
+func connHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
+	var NumberOfReads int = 0
+	var mutex sync.Mutex
 	for {
 		// Accept an incoming connection.
 		conn, err := socket.Accept()
@@ -163,7 +167,7 @@ func connHandler(socket net.Listener, agent string, channl chan []float64) {
 		}
 
 		// Handle the connection in a separate goroutine.
-		go func(conn net.Conn, channl chan []float64) {
+		go func(conn net.Conn, channl chan RISCHANNL) {
 			defer conn.Close()
 
 			buf := make([]byte, 256*2*20) // 256 patch * real x imag * number of bytes
@@ -177,26 +181,33 @@ func connHandler(socket net.Listener, agent string, channl chan []float64) {
 				fmt.Println(err, "Reading Ris Coefficients")
 			}
 			if n != 0 {
-				fmt.Print(string(buf))
+				//fmt.Print(string(buf))
 				coef := RICToAgent{}
 				if err := json.Unmarshal(buf[:n], &coef); err != nil {
 					log.Print(err, "received: ", n)
 				}
-				fmt.Println(coef.Coefficients)
+
+				go EvaluateCoeffs(NumberOfReads, coef.Coefficients)
+				mutex.Lock()
+				NumberOfReads++
+				mutex.Unlock()
+				//fmt.Println(coef.Coefficients)
 			}
 
 			var send string
 			Fields := []string{"Position", "H", "G"}
-			for _, f := range Fields {
-				v := <-channl
-				msg := AgentToRIC{Equipment: agent, Field: f, Data: v}
+
+			v := <-channl
+			for idx, f := range v {
+				msg := AgentToRIC{Equipment: agent, Field: Fields[idx], Data: f}
 				marshaled_msg, err := json.Marshal(msg)
 				if err != nil {
 					log.Print(err)
 				}
 				send = send + string(marshaled_msg) + "\n"
 			}
-			fmt.Println(send)
+			//fmt.Println("Generated Channels : ")
+			//fmt.Println(send[100:], "....")
 			_, _ = conn.Write([]byte(send))
 			//_, _ = conn.Write([]byte{1, 3, 5})
 		}(conn, channl)
