@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var SavedHG []cmat.Cmatrix
+var SavedHG map[int64][]cmat.Cmatrix = make(map[int64][]cmat.Cmatrix)
 
 func main() {
 
@@ -33,9 +33,10 @@ func main() {
 			gd := destructure(g)
 			//	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
 			//	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
-			simulation.RisChannl <- [][]float64{[]float64{v.rx.x, v.rx.y, v.rx.z}, hd, gd}
-			SavedHG = append(SavedHG, h, g)
-			time.Sleep(1 * time.Second)
+			ts := time.Now().Unix()
+			simulation.RisChannl <- [][]float64{[]float64{float64(ts)}, []float64{v.rx.x, v.rx.y, v.rx.z}, hd, gd}
+			SavedHG[ts] = []cmat.Cmatrix{h, g}
+			time.Sleep(3 * time.Second)
 			//generateData(simulation, 1)
 		}
 	}

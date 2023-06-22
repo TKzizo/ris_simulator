@@ -8,7 +8,6 @@ import (
 	"math"
 	"net"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -22,10 +21,12 @@ const (
 type AgentToRIC struct {
 	Equipment string    `json:"Equipment"`
 	Field     string    `json:"Field`
+	TS        int64     `json:TS`
 	Data      []float64 `json:"Data"`
 }
 
 type RICToAgent struct {
+	TS           int64     `json:TS`
 	Coefficients []float64 `json:"Coefficients`
 }
 
@@ -157,8 +158,7 @@ func (s *Simulation) setupSockets() chan RISCHANNL /*, chan []float64, chan []fl
 }
 
 func connHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
-	var NumberOfReads int = 0
-	var mutex sync.Mutex
+
 	for {
 		// Accept an incoming connection.
 		conn, err := socket.Accept()
@@ -187,10 +187,7 @@ func connHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
 					log.Print(err, "received: ", n)
 				}
 
-				go EvaluateCoeffs(NumberOfReads, coef.Coefficients)
-				mutex.Lock()
-				NumberOfReads++
-				mutex.Unlock()
+				go EvaluateCoeffs(int64(coef.TS), coef.Coefficients)
 				//fmt.Println(coef.Coefficients)
 			}
 
@@ -198,14 +195,16 @@ func connHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
 			Fields := []string{"Position", "H", "G"}
 
 			v := <-channl
-			for idx, f := range v {
-				msg := AgentToRIC{Equipment: agent, Field: Fields[idx], Data: f}
+			ts := v[0][0]
+			for idx, f := range v[1:] {
+				msg := AgentToRIC{Equipment: agent, Field: Fields[idx], Data: f, TS: int64(ts)}
 				marshaled_msg, err := json.Marshal(msg)
 				if err != nil {
 					log.Print(err)
 				}
 				send = send + string(marshaled_msg) + "\n"
 			}
+			fmt.Println(send)
 			//fmt.Println("Generated Channels : ")
 			//fmt.Println(send[100:], "....")
 			_, _ = conn.Write([]byte(send))

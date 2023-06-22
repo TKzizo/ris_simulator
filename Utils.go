@@ -2,7 +2,6 @@ package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
-	"encoding/csv"
 	"fmt"
 	"log"
 	"math"
@@ -144,13 +143,13 @@ func construct(bytes ...[]float64) []float64 {
 	return ret
 }
 
-func EvaluateCoeffs(nbr int, coef []float64) {
+func EvaluateCoeffs(nbr int64, coef []float64) {
 
 	fd, err := os.Open("SNR.csv")
 	if err != nil {
 		log.Print(err)
 	}
-	csvwriter := csv.NewWriter(fd)
+	//csvwriter := csv.NewWriter(fd)
 
 	var simCoef []complex128
 	var CalculatedCoef []complex128
@@ -161,26 +160,30 @@ func EvaluateCoeffs(nbr int, coef []float64) {
 
 	}
 
-	h := cmat.Transpose(SavedHG[nbr*2]).Data[0]
+	h := cmat.Transpose(SavedHG[nbr][0]).Data[0]
 
-	g := SavedHG[nbr*2+1].Data[0]
+	g := SavedHG[nbr][1].Data[0]
 	fmt.Println("Xapp Phases: ", coef)
 	simCoef = GetCoefficients(h, g)
+	//coefWOR := GetCoefficients_without_remainder(h, g)
 
 	rate := RateSISO(h, g, CalculatedCoef)
 	rate2 := RateSISO(h, g, RandomCoef)
-	rate3 := RateSISO(h, g, simCoef)
+	//rate3 := RateSISO(h, g, simCoef)
+	//rate4 := RateSISO(h, g, coefWOR)
+
 	fmt.Println("Coefficients From xApp : ")
 	fmt.Println(CalculatedCoef[4:], "......")
 	fmt.Println("Coefficients From SIM : ")
 	fmt.Println(simCoef[4:], "......")
 
-	row := []string{strconv.FormatFloat(rate, 'f', -1, 64), strconv.FormatFloat(rate2, 'f', -1, 64), strconv.FormatFloat(rate3, 'f', -1, 64)}
+	//row := []string{strconv.FormatFloat(rate, 'f', -1, 64), strconv.FormatFloat(rate2, 'f', -1, 64), strconv.FormatFloat(rate3, 'f', -1, 64)}
 	fmt.Println("Rate with Optimal Coefficients :", rate)
+	//fmt.Println("Rate without remainder Coefficients :", rate4)
 	fmt.Println("Rate with Random Coefficients :", rate2)
-	fmt.Println("Rate with Sim Coefficients :", rate3)
-	csvwriter.Write(row)
-	csvwriter.Flush()
+	//fmt.Println("Rate with Sim Coefficients :", rate3)
+	//csvwriter.Write(row)
+	//csvwriter.Flush()
 	fd.Close()
 
 }
@@ -222,6 +225,21 @@ func GetCoefficients(H, G []complex128) []complex128 {
 		psi_n := cmplx.Phase(G[i])
 		fmt.Print(math.Remainder(-(phi_n+psi_n), 2*math.Pi), ", ")
 		Theta_ris = append(Theta_ris, cmplx.Rect(1, math.Remainder(-(phi_n+psi_n), 2*math.Pi)))
+	}
+
+	fmt.Println()
+	return Theta_ris
+}
+
+func GetCoefficients_without_remainder(H, G []complex128) []complex128 {
+
+	Theta_ris := []complex128{}
+	fmt.Println("Sim Phases: ")
+	for i := 0; i < len(H); i++ {
+		phi_n := cmplx.Phase(H[i])
+		psi_n := cmplx.Phase(G[i])
+		fmt.Print(math.Remainder(-(phi_n+psi_n), 2*math.Pi), ", ")
+		Theta_ris = append(Theta_ris, cmplx.Rect(1, -(phi_n+psi_n)))
 	}
 
 	fmt.Println()
