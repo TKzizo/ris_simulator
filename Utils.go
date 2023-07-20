@@ -15,9 +15,9 @@ import (
 )
 
 type Coordinates struct {
-	x float64
-	y float64
-	z float64
+	x float64 `json:"x"`
+	y float64 `json:"y"`
+	z float64 `json:"z"`
 }
 
 func Distance(a, b Coordinates) float64 {

@@ -9,17 +9,44 @@ import (
 var SavedHG map[int64][]cmat.Cmatrix = make(map[int64][]cmat.Cmatrix)
 
 func main() {
+	cfg := initCfg("./init.json")
 
-	ris := RIS{N: 16, xyz: Coordinates{x: 40, y: 50, z: 2}}
-	tx := Tx_Rx{N: 1, Type: 0, xyz: Coordinates{x: 0, y: 25, z: 2}}
-	rx := Tx_Rx{N: 1, Type: 0, xyz: Coordinates{x: 38, y: 48, z: 1}}
+	ris := RIS{
+		N: cfg.Equipements.Ris.Elements,
+		xyz: Coordinates{
+			x: cfg.Equipements.Ris.Coord.X,
+			y: cfg.Equipements.Ris.Coord.Y,
+			z: cfg.Equipements.Ris.Coord.Z,
+		},
+	}
 
+	tx := Tx_Rx{
+		N: cfg.Equipements.Tx.Elements,
+		xyz: Coordinates{
+			x: cfg.Equipements.Tx.Coord.X,
+			y: cfg.Equipements.Tx.Coord.Y,
+			z: cfg.Equipements.Tx.Coord.Z,
+		},
+		Type: cfg.Equipements.Tx.Type,
+	}
+
+	rx := Tx_Rx{
+		N: cfg.Equipements.Rx.Elements,
+		xyz: Coordinates{
+			x: cfg.Equipements.Rx.Coord.X,
+			y: cfg.Equipements.Rx.Coord.Y,
+			z: cfg.Equipements.Rx.Coord.Z,
+		},
+		Type: cfg.Equipements.Rx.Type,
+	}
 	simulation := Simulation{
 		Ris:       ris,
 		Tx:        tx,
 		Rx:        rx,
-		Frequency: 28.0,
-		Env:       Environment{75.0, 50.0, 3.5}}
+		Frequency: cfg.Frequency,
+		Env: Environment{cfg.Env.Length,
+			cfg.Env.Width,
+			cfg.Env.Height}}
 
 	simulation.Setup()
 	list := simulation.Run()
