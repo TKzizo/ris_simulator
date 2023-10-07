@@ -1,9 +1,9 @@
 // TODO Replace all cmplx.Exp with cmplx.Rect
-// TODO convert all structs into slices for optimisation
 package main
 
 import (
 	cmat "RIS_SIMULATOR/reducedComplex"
+	"fmt"
 	"math"
 	"math/cmplx"
 	"time"
@@ -23,25 +23,68 @@ func (s *Simulation) H_channel(clusters []Cluster) cmat.Cmatrix {
 		s.Ris.Phi_Tx = float64(sign(s.Ris.xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Ris.xyz.y-s.Tx.xyz.y), math.Abs(s.Ris.xyz.x-s.Tx.xyz.x))
 	}
 	//Calculate Phi and theta for RIS-Cluster and TX-Cluster (H-NLOS)
-	if s.Broadside == 0 { //SideWall
+	clusters2 := []Cluster{}
+	var counter_theta, counter_phi = 0, 0
 
+	if s.Broadside == 0 { //SideWall
 		for i := 0; i < len(clusters); i++ {
+			clusters2 = append(clusters2, clusters[i])
+			clusters2[i].Scatterers = append(clusters2[i].Scatterers, clusters[i].Scatterers...)
 			for y := 0; y < len(clusters[i].Scatterers); y++ {
 				clusters[i].Scatterers[y].Phi_RIS = float64(sign(s.Ris.xyz.x, clusters[i].Scatterers[y].xyz.x)) * math.Atan2(math.Abs(s.Ris.xyz.x-clusters[i].Scatterers[y].xyz.x), math.Abs(s.Ris.xyz.y-clusters[i].Scatterers[y].xyz.y))
 				clusters[i].Scatterers[y].Phi_TX = float64(sign(s.Tx.xyz.y, clusters[i].Scatterers[y].xyz.y)) * math.Atan2(math.Abs(clusters[i].Scatterers[y].xyz.y-s.Tx.xyz.y), math.Abs(clusters[i].Scatterers[y].xyz.x-s.Tx.xyz.x))
+				//clusters[i].Scatterers[y].Phi_TX = DegToRad(clusters[i].Scatterers[y].Phi_TX)
 				clusters[i].Scatterers[y].Theta_RIS = float64(sign(clusters[i].Scatterers[y].xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-clusters[i].Scatterers[y].xyz.z)/Distance(s.Ris.xyz, clusters[i].Scatterers[y].xyz))
+				//clusters[i].Scatterers[y].Theta_TX = DegToRad(clusters[i].Scatterers[y].Theta_TX)
 				clusters[i].Scatterers[y].Theta_TX = float64(sign(clusters[i].Scatterers[y].xyz.z, s.Tx.xyz.z)) * math.Asin(math.Abs(clusters[i].Scatterers[y].xyz.z-s.Tx.xyz.z)/Distance(s.Tx.xyz, clusters[i].Scatterers[y].xyz))
+
+				if (RadToDeg(clusters[i].Scatterers[y].Theta_TX) > 0 && clusters2[i].Scatterers[y].Theta_TX < 0) || (RadToDeg(clusters[i].Scatterers[y].Theta_TX) < 0 && clusters2[i].Scatterers[y].Theta_TX > 0) {
+					counter_theta++
+				}
+				if (RadToDeg(clusters[i].Scatterers[y].Phi_TX) > 0 && clusters2[i].Scatterers[y].Phi_TX < 0) || (RadToDeg(clusters[i].Scatterers[y].Phi_TX) < 0 && clusters2[i].Scatterers[y].Phi_TX > 0) {
+					counter_phi++
+					fmt.Println("TX: ", s.Tx.xyz, " Scatterer: ", clusters[i].Scatterers[y].xyz)
+					fmt.Println("Calculated: Theta_TX: ", clusters[i].Scatterers[y].Theta_TX, " Phi_TX: ", clusters[i].Scatterers[y].Phi_TX)
+					fmt.Println("Generate: Theta_TX: ", DegToRad(clusters2[i].Scatterers[y].Theta_TX), " Phi_TX: ", DegToRad(clusters2[i].Scatterers[y].Phi_TX))
+
+				}
+
 			}
 		}
+		var nbr_scatterers int
+		for _, cluster := range clusters {
+			nbr_scatterers += len(cluster.Scatterers)
+		}
+		fmt.Println("counter_theta: ", counter_theta, " counter_phi: ", counter_phi, "nbr_scatterers: ", nbr_scatterers)
+
 	} else if s.Broadside == 1 { //OppositeWall
 		for i := 0; i < len(clusters); i++ {
+			clusters2 = append(clusters2, clusters[i])
+			clusters2[i].Scatterers = append(clusters2[i].Scatterers, clusters[i].Scatterers...)
 			for y := 0; y < len(clusters[i].Scatterers); y++ {
+
+				//fmt.Println("Generate: Theta_TX: ", DegToRad(clusters[i].Scatterers[y].Theta_TX), " Phi_TX: ", DegToRad(clusters[i].Scatterers[y].Phi_TX))
 				clusters[i].Scatterers[y].Phi_RIS = float64(sign(clusters[i].Scatterers[y].xyz.y, s.Ris.xyz.y)) * math.Atan2(math.Abs(s.Ris.xyz.y-clusters[i].Scatterers[y].xyz.y), math.Abs(s.Ris.xyz.x-clusters[i].Scatterers[y].xyz.x))
 				clusters[i].Scatterers[y].Phi_TX = float64(sign(s.Tx.xyz.y, clusters[i].Scatterers[y].xyz.y)) * math.Atan2(math.Abs(clusters[i].Scatterers[y].xyz.y-s.Tx.xyz.y), math.Abs(clusters[i].Scatterers[y].xyz.x-s.Tx.xyz.x))
+				//clusters[i].Scatterers[y].Phi_TX = DegToRad(clusters[i].Scatterers[y].Phi_TX)
 				clusters[i].Scatterers[y].Theta_RIS = float64(sign(clusters[i].Scatterers[y].xyz.z, s.Ris.xyz.z)) * math.Asin(math.Abs(s.Ris.xyz.z-clusters[i].Scatterers[y].xyz.z)/Distance(s.Ris.xyz, clusters[i].Scatterers[y].xyz))
 				clusters[i].Scatterers[y].Theta_TX = float64(sign(clusters[i].Scatterers[y].xyz.z, s.Tx.xyz.z)) * math.Asin(math.Abs(clusters[i].Scatterers[y].xyz.z-s.Tx.xyz.z)/Distance(s.Tx.xyz, clusters[i].Scatterers[y].xyz))
+				//clusters[i].Scatterers[y].Theta_TX = DegToRad(clusters[i].Scatterers[y].Theta_TX)
+				//fmt.Println("Calculated: Theta_TX: ", clusters[i].Scatterers[y].Theta_TX, " Phi_TX: ", clusters[i].Scatterers[y].Phi_TX)
+				if (RadToDeg(clusters[i].Scatterers[y].Theta_TX) > 0 && clusters2[i].Scatterers[y].Theta_TX < 0) || (RadToDeg(clusters[i].Scatterers[y].Theta_TX) < 0 && clusters2[i].Scatterers[y].Theta_TX > 0) {
+					counter_theta++
+				}
+				if (RadToDeg(clusters[i].Scatterers[y].Phi_TX) > 0 && clusters2[i].Scatterers[y].Phi_TX < 0) || (RadToDeg(clusters[i].Scatterers[y].Phi_TX) < 0 && clusters2[i].Scatterers[y].Phi_TX > 0) {
+					counter_phi++
+				}
+
 			}
 		}
+		var nbr_scatterers int
+		for _, cluster := range clusters {
+			nbr_scatterers += len(cluster.Scatterers)
+		}
+		fmt.Println("counter_theta: ", counter_theta, " counter_phi: ", counter_phi, "nbr_scatterers: ", nbr_scatterers)
 	}
 	hnlos := HNLos(s, clusters)
 	hlos := HLos(s)
@@ -135,7 +178,9 @@ func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
 				}
 			}
 			if s.Tx.Type == 0 {
+
 				for x := 0; x < s.Tx.N; x++ {
+
 					AR_cs_tx.Data[index][x] = cmplx.Exp(1i * complex(s.k*s.Tx.dis*(math.Sin(scatterer.Phi_TX)*math.Cos(scatterer.Theta_TX)), 0))
 				}
 

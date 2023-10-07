@@ -30,8 +30,10 @@ func DegToRad(a float64) float64 {
 	return a * math.Pi / 180
 }
 func sign(a, b float64) int8 {
-	if a >= b {
+	if a > b {
 		return 1
+	} else if a == b {
+		return 0
 	}
 	return -1
 }

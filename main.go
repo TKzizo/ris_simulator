@@ -46,7 +46,9 @@ func main() {
 		Frequency: cfg.Frequency,
 		Env: Environment{cfg.Env.Length,
 			cfg.Env.Width,
-			cfg.Env.Height}}
+			cfg.Env.Height},
+
+		Broadside: 0}
 
 	simulation.Setup()
 	list := simulation.Run()
