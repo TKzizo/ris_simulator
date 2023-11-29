@@ -13,7 +13,8 @@ func (s *Simulation) InputPositions() {
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println("Successfully Opened User Positions File")
+	log.Println("Position file opened successfully")
+
 	defer csvFile.Close()
 
 	csvLines, err := csv.NewReader(csvFile).ReadAll()
@@ -21,10 +22,10 @@ func (s *Simulation) InputPositions() {
 		fmt.Println(err)
 	}
 
-	fmt.Println("number of User positions: ", len(csvLines))
+	log.Println("Number of User positions: ", len(csvLines))
 	list_positions := []Updates{}
 
-	for _, line := range csvLines {
+	for _, line := range csvLines[1:] {
 		position := Updates{}
 		if v, err := strconv.ParseFloat(line[0], 64); err == nil && v <= s.Env.length && v >= 0 {
 			position.ris.x = v

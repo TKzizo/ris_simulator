@@ -93,9 +93,9 @@ func GenerateAngles(c *Cluster) {
 
 	for i := 0; i < len(c.Scatterers); i++ {
 		c.Scatterers[i].Phi_TX = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_phi
-		//c.Scatterers[i].Phi_TX =
+		c.Scatterers[i].Phi_RX = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_phi
 		c.Scatterers[i].Theta_TX = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_theta
-		//c.Scatterers[i].Theta_RX =
+		c.Scatterers[i].Theta_RX = math.Log(rand.Float64()/rand.Float64())*math.Sqrt(25/2) + c.mean_theta
 	}
 }
 

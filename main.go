@@ -39,6 +39,7 @@ func main() {
 		},
 		Type: cfg.Equipements.Rx.Type,
 	}
+
 	simulation := Simulation{
 		Ris:       ris,
 		Tx:        tx,
@@ -48,7 +49,8 @@ func main() {
 			cfg.Env.Width,
 			cfg.Env.Height},
 
-		Broadside: 0}
+		Broadside: 0,
+	}
 
 	simulation.Setup()
 	list := simulation.Run()

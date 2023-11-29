@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 )
@@ -40,7 +40,7 @@ func initCfg(cfgPath string) InitConfig {
 	if err != nil {
 		log.Println(err)
 	}
-	bytes, err := ioutil.ReadAll(jsonfile)
+	bytes, err := io.ReadAll(jsonfile)
 	if err != nil {
 		log.Println(err)
 	}

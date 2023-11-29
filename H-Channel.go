@@ -110,7 +110,7 @@ func HLos(s *Simulation) cmat.Cmatrix {
 	}
 	//	fmt.Println(cmat.Scale(AR_tx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0))))
 	//	fmt.Scanln()
-	return cmat.Scale(AR_tx_ris, complex(math.Sqrt(ge*attenuation), 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
+	return cmat.Scale(AR_tx_ris, complex(attenuation, 0)*cmplx.Exp(1i*complex(eta.Rand(), 0)))
 }
 
 func HNLos(s *Simulation, clusters []Cluster) cmat.Cmatrix {
