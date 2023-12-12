@@ -92,7 +92,6 @@ func (s *Simulation) Run() *[]cmat.Cmatrix {
 		list = append(list, h)
 		g = s.G_channel()
 		list = append(list, g)
-		fmt.Println(update.Los)
 		if update.Los {
 			d = s.D_channel(clusters)
 			//fmt.Println(d)
@@ -105,7 +104,7 @@ func (s *Simulation) Run() *[]cmat.Cmatrix {
 	return &list
 }
 func (s *Simulation) InputPositions(filePath string) {
-	csvFile, err := os.Open("Positions.csv")
+	csvFile, err := os.Open(filePath)
 	if err != nil {
 		log.Println(err)
 	}

@@ -47,7 +47,7 @@ func generateData(simulation *Simulation) {
 	nbr_positions := len(simulation.Positions)
 
 	saveRunningConfig(directoryNameFormat, nbr_positions, simulation)
-
+	//setting up Data strctures and directories to save results
 	for _, v := range channelsList {
 		switch v {
 		case "H":
@@ -81,37 +81,43 @@ func generateData(simulation *Simulation) {
 	}
 	//var wg sync.WaitGroup
 	for y := 0; y < iterations; y++ {
-		for i := 0; i < nbr_positions; i++ {
-			list := simulation.Run()
-			index_channels := 0
-			if hb {
-				H := &(*list)[index_channels]
+		list := simulation.Run()
+		index_channels := 0
+		if hb {
+			for i := 0; i < nbr_positions; i++ {
+				H := &(*list)[index_channels+i*3]
 				for hi, line := range H.Data {
 					for hii, ele := range line {
 						h[hi*len(line)+hii][i] = ComplextoString(ele)
 					}
 				}
-				index_channels++
 			}
-			if gb {
-				G := &(*list)[index_channels]
+			index_channels++
+		}
+		if gb {
+			for i := 0; i < nbr_positions; i++ {
+				G := &(*list)[index_channels+i*3]
 				for gi, line := range G.Data {
 					for gii, ele := range line {
 						g[gi*len(line)+gii][i] = ComplextoString(ele)
 					}
 				}
-				index_channels++
 			}
-			if db {
-				D := &(*list)[index_channels]
+			index_channels++
+		}
+		if db {
+			for i := 0; i < nbr_positions; i++ {
+
+				D := &(*list)[index_channels+i*3]
 				for di, line := range D.Data {
 					for dii, ele := range line {
 						d[di*len(line)+dii][i] = ComplextoString(ele)
 					}
 				}
-				index_channels++
 			}
+			index_channels++
 		}
+
 		fmt.Println(y, " iteration")
 
 		if hb {
