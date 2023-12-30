@@ -222,7 +222,7 @@ func (s *Simulation) setupSockets() chan RISCHANNL /*, chan []float64, chan []fl
 	return nil
 }
 
-func InitSimualtion(cfg InitConfig, rxPositions string) *Simulation {
+func InitSimualtion(cfg InitConfig) *Simulation {
 	ris := RIS{
 		N: cfg.Equipements.Ris.Elements,
 		Xyz: Coordinates{

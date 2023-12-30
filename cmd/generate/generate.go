@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+Copyright © 2023 Eurecom <adlen.ksentini@eurecom.fr>
 */
 package generate
 
@@ -29,7 +29,7 @@ var GenerateCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Generate command called")
-		simulation := InitSimualtion(cfg, userPositions)
+		simulation := InitSimualtion(cfg)
 		simulation.Setup(cfg, userPositions)
 		generateData(simulation)
 	},
