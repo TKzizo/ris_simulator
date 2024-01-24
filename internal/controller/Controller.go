@@ -1,5 +1,3 @@
-//go:build C
-
 package controller
 
 import (
@@ -10,7 +8,7 @@ import (
 	"time"
 
 	. "gitlab.eurecom.fr/ris-simulator/internal/structures"
-	. "gitlab.eurecom.fr/ris-simulator/internal/utils"
+	//. "gitlab.eurecom.fr/ris-simulator/internal/utils"
 )
 
 /*func GetCoefficients(H, G mat.CDense) mat.CDense { //SISO ie: H and G are column vector of the same size
@@ -47,7 +45,7 @@ type RICToAgent struct {
 	Coefficients []float64 `json:"Coefficients`
 }
 
-func ConnHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
+func ConnHandler(socket net.Listener, channl chan RISCHANNL, bufferSize int) {
 	log.Println("socket init")
 	log.Println("waiting for connection at: ", socket.Addr())
 	for {
@@ -61,7 +59,7 @@ func ConnHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
 		go func(conn net.Conn, channl chan RISCHANNL) {
 			defer conn.Close()
 
-			buf := make([]byte, 256*2*20) // 256 patch * real x imag * number of bytes
+			buf := make([]byte, bufferSize)
 
 			err := conn.SetReadDeadline(time.Now().Add(40 * time.Millisecond))
 			if err != nil {
@@ -78,23 +76,41 @@ func ConnHandler(socket net.Listener, agent string, channl chan RISCHANNL) {
 					log.Print(err, "received: ", n)
 				}
 
-				go EvaluateCoeffs(int64(coef.TS), coef.Coefficients)
+				//go EvaluateCoeffs(int64(coef.TS), coef.Coefficients)
 				//fmt.Println(coef.Coefficients)
 			}
 
 			var send string
-			Fields := []string{"Position", "H", "G"}
+			agent := []string{"RIS", "TX", "RX"}
 
 			v := <-channl
 			ts := v[0][0]
+
 			for idx, f := range v[1:] {
-				msg := AgentToRIC{Equipment: agent, Field: Fields[idx], Data: f, TS: int64(ts)}
+				msg := AgentToRIC{
+					Equipment: agent[idx],
+					Field:     "Positions",
+					Data:      f,
+					TS:        int64(ts),
+				}
 				marshaled_msg, err := json.Marshal(msg)
 				if err != nil {
 					log.Print(err)
 				}
 				send = send + string(marshaled_msg) + "\n"
 			}
+			/*for idx, f := range v[1:] {
+				msg := AgentToRIC{
+					Equipment: agent,
+					Field:     Fields[idx],
+					Data:      f, TS: int64(ts),
+				}
+				marshaled_msg, err := json.Marshal(msg)
+				if err != nil {
+					log.Print(err)
+				}
+				send = send + string(marshaled_msg) + "\n"
+			}*/
 			fmt.Println(send)
 			//fmt.Println("Generated Channels : ")
 			//fmt.Println(send[100:], "....")

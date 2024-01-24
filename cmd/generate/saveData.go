@@ -79,7 +79,7 @@ func generateData(simulation *Simulation) {
 			}
 		}
 	}
-	//var wg sync.WaitGroup
+
 	for y := 0; y < iterations; y++ {
 		list := simulation.Run()
 		index_channels := 0

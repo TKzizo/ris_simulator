@@ -116,7 +116,7 @@ func ComplextoString(c complex128) string {
 
 }*/
 
-func destructure(m cmat.Cmatrix) []float64 {
+func Destructure(m *cmat.Cmatrix) []float64 {
 
 	v := make([]float64, m.Row*m.Col*2)
 

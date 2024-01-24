@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	cmat "gitlab.eurecom.fr/ris-simulator/internal/reducedComplex"
 	. "gitlab.eurecom.fr/ris-simulator/internal/simulation"
 	"gitlab.eurecom.fr/ris-simulator/internal/utils"
 )
@@ -67,29 +68,39 @@ func init() {
 
 }
 
-var SavedHG map[int64][]cmat.Cmatrix = make(map[int64][]cmat.Cmatrix)
-
 func simulate(simulation Simulation) {
 
-	list := simulation.Run()
+	var SavedHG map[int64][]*cmat.Cmatrix = make(map[int64][]*cmat.Cmatrix, 10) // varilable was used to save the scheduling until: "the xAPP get fixed to send the coefficients inorder"
+
+	//list := simulation.Run()
 	//_, _ = os.Create("SNR.csv")
 
 	for {
+		list := simulation.Run() // channel may change ever slightly from (p1,t0) to (p1,t1)
 		for i, v := range simulation.Positions {
 			// List: [h0, g0, d0, ... ,h,g,d]
-			h := list[i*3]
-			g := list[i*3+1]
-			hd := destructure(h)
-			gd := destructure(g)
+			h := &(*list)[i*3]
+			g := &(*list)[i*3+1]
+			d := &(*list)[i*3+2] // d is empty matrix if v.LOS == false
+
+			//hd := utils.Destructure(h)
+			//gd := utils.Destructure(g)
+			//dd := utils.Destructure(d)
 			//	simulation.RisChannl <- construct([]float64{simulation.Ris.xyz.x, simulation.Ris.xyz.y, simulation.Ris.xyz.z}, hd, gd)
 			//	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
 			ts := time.Now().Unix()
-			simulation.RisChannl <- [][]float64{[]float64{float64(ts)}, []float64{v.rx.x, v.rx.y, v.rx.z}, hd, gd}
-			SavedHG[ts] = []cmat.Cmatrix{h, g}
-			time.Sleep(3 * time.Second)
+			//simulation.RisChannl <- [][]float64{[]float64{float64(ts)}, []float64{v.rx.x, v.rx.y, v.rx.z}, hd, gd, dd}
+			simulation.RisChannl <- [][]float64{[]float64{float64(ts)},
+				[]float64{v.Ris.X, v.Ris.Y, v.Ris.Z},
+				[]float64{v.Tx.X, v.Tx.Y, v.Tx.Z},
+				[]float64{v.Rx.X, v.Rx.Y, v.Rx.Z},
+			}
+
+			SavedHG[ts] = []*cmat.Cmatrix{h, g, d}
+			time.Sleep(20 * time.Millisecond)
 			//generateData(simulation, 1)
 		}
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(10 * time.Millisecond)
 }

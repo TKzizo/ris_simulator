@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net"
 	"os"
 	"strconv"
+	"unsafe"
 
-	//. "gitlab.eurecom.fr/ris-simulator/internal/controller"
+	. "gitlab.eurecom.fr/ris-simulator/internal/controller"
 	cmat "gitlab.eurecom.fr/ris-simulator/internal/reducedComplex"
 	. "gitlab.eurecom.fr/ris-simulator/internal/structures"
 	. "gitlab.eurecom.fr/ris-simulator/internal/utils"
@@ -75,7 +77,8 @@ func (s *Simulation) Setup(cfg InitConfig, rxPositions string) {
 		s.Sigma_NLOS = 8.29
 	}
 
-	s.RisChannl /* s.TxChannl, s.RxChannl*/ = s.setupSockets()
+	//s.RisChannl /* s.TxChannl, s.RxChannl*/ = s.setupSockets()
+	s.SetupSockets()
 	s.InputPositions(rxPositions)
 	//s.CheckPositioning() // To apply the 3GPP standards
 }
@@ -199,27 +202,33 @@ func (s *Simulation) InputPositions(filePath string) {
 	s.Positions = list_positions
 }
 
-func (s *Simulation) setupSockets() chan RISCHANNL /*, chan []float64, chan []float64*/ {
-	/*var risaddr string = "/tmp/ris.sock"
+func (s *Simulation) SetupSockets() /*chan RISCHANNL, chan []float64, chan []float64*/ {
+	var risaddr string = "/tmp/ris.sock"
 
 	// Remove socket if it already exists
 	err := os.Remove(risaddr)
 	if err != nil {
-		log.Fatal("Could not create Socket: ", err)
+		if !os.IsNotExist(err) {
+			log.Fatal("Could not remove existing Socket: ", err)
+		}
 	}
 
 	// Create Socket Listner
 	socketRIS, err := net.Listen("unix", risaddr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Could not create socket listner", err)
 	}
 
-	risChannl := make(chan RISCHANNL)
+	s.RisChannl = make(chan RISCHANNL)
+	bufferSize := s.Ris.N * int(unsafe.Sizeof(0.0)) * 2 //  nbr_patches * real x imag  * number of bytes
+	if bufferSize <= 0 {
+		log.Fatal("buffer size error.")
+	}
 
-	go ConnHandler(socketRIS, "RIS", risChannl)
+	go ConnHandler(socketRIS, s.RisChannl, bufferSize)
 
-	return risChannl //, txChannl, rxChannl*/
-	return nil
+	//return risChannl //, txChannl, rxChannl
+	//return nil
 }
 
 func InitSimualtion(cfg InitConfig) *Simulation {
