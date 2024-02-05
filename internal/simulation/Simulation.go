@@ -35,7 +35,7 @@ type Simulation struct {
 	//channel    chan Updates
 	Broadside int8 // 0: SideWall 1: OppositeWall
 	Positions []Updates
-	RisChannl chan RISCHANNL
+	RisChannl chan SimAgentChannel
 }
 
 func (s *Simulation) Setup(cfg InitConfig, rxPositions string) {
@@ -128,62 +128,62 @@ func (s *Simulation) InputPositions(filePath string) {
 		if v, err := strconv.ParseFloat(line[0], 64); err == nil && v <= s.Env.Length && v >= 0 {
 			position.Ris.X = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries Length Ris")
 			continue
 		}
 		if v, err := strconv.ParseFloat(line[1], 64); err == nil && v <= s.Env.Width && v >= 0 {
 			position.Ris.Y = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries width Ris")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[2], 64); err == nil && v <= s.Env.Height && v >= 0 {
 			position.Ris.Z = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries height Ris")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[3], 64); err == nil && v <= s.Env.Length && v >= 0 {
 			position.Tx.X = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries Length Tx")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[4], 64); err == nil && v <= s.Env.Width && v >= 0 {
 			position.Tx.Y = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries width Tx")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[5], 64); err == nil && v <= s.Env.Height && v >= 0 {
 			position.Tx.Z = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries height Tx")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[6], 64); err == nil && v <= s.Env.Length && v >= 0 {
 			position.Rx.X = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries Length Rx")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[7], 64); err == nil && v <= s.Env.Width && v >= 0 {
 			position.Rx.Y = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries width Rx")
 			continue
 		}
 
 		if v, err := strconv.ParseFloat(line[8], 64); err == nil && v <= s.Env.Height && v >= 0 {
 			position.Rx.Z = v
 		} else {
-			fmt.Println("Position Over-Boundries")
+			fmt.Println("Position Over-Boundries height Rx")
 			continue
 		}
 
@@ -200,6 +200,7 @@ func (s *Simulation) InputPositions(filePath string) {
 		fmt.Println(v)
 	}*/
 	s.Positions = list_positions
+
 }
 
 func (s *Simulation) SetupSockets() /*chan RISCHANNL, chan []float64, chan []float64*/ {
@@ -219,7 +220,7 @@ func (s *Simulation) SetupSockets() /*chan RISCHANNL, chan []float64, chan []flo
 		log.Fatal("Could not create socket listner", err)
 	}
 
-	s.RisChannl = make(chan RISCHANNL)
+	s.RisChannl = make(chan SimAgentChannel)
 	bufferSize := s.Ris.N * int(unsafe.Sizeof(0.0)) * 2 //  nbr_patches * real x imag  * number of bytes
 	if bufferSize <= 0 {
 		log.Fatal("buffer size error.")

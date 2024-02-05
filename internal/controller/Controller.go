@@ -35,17 +35,17 @@ func GetCoefficients(H, G mat.CDense) mat.CDiagonal { //SISO ie: H and G are col
 
 type AgentToRIC struct {
 	Equipment string    `json:"Equipment"`
-	Field     string    `json:"Field`
-	TS        int64     `json:TS`
-	Data      []float64 `json:"Data"`
+	TS        int       `json:"TS"`
+	Positions []float64 `json:"Positions"`
+	Elements  int       `json:"Elements"`
 }
 
 type RICToAgent struct {
-	TS           int64     `json:TS`
-	Coefficients []float64 `json:"Coefficients`
+	TS           int       `json:"TS"`
+	Coefficients []float64 `json:"Coefficients"`
 }
 
-func ConnHandler(socket net.Listener, channl chan RISCHANNL, bufferSize int) {
+func ConnHandler(socket net.Listener, channl chan SimAgentChannel, bufferSize int) {
 	log.Println("socket init")
 	log.Println("waiting for connection at: ", socket.Addr())
 	for {
@@ -56,7 +56,7 @@ func ConnHandler(socket net.Listener, channl chan RISCHANNL, bufferSize int) {
 		}
 
 		// Handle the connection in a separate goroutine.
-		go func(conn net.Conn, channl chan RISCHANNL) {
+		go func(conn net.Conn, channl chan SimAgentChannel) {
 			defer conn.Close()
 
 			buf := make([]byte, bufferSize)
@@ -81,24 +81,40 @@ func ConnHandler(socket net.Listener, channl chan RISCHANNL, bufferSize int) {
 			}
 
 			var send string
-			agent := []string{"RIS", "TX", "RX"}
-
 			v := <-channl
-			ts := v[0][0]
 
-			for idx, f := range v[1:] {
-				msg := AgentToRIC{
-					Equipment: agent[idx],
-					Field:     "Positions",
-					Data:      f,
-					TS:        int64(ts),
-				}
-				marshaled_msg, err := json.Marshal(msg)
-				if err != nil {
-					log.Print(err)
-				}
-				send = send + string(marshaled_msg) + "\n"
+			ris := AgentToRIC{
+				Equipment: "Ris",
+				Positions: v["RIS"][1:],
+				Elements:  int(v["RIS"][0]),
+				TS:        int(v["TS"][0]),
 			}
+			marshaled_ris, err := json.Marshal(ris)
+			if err != nil {
+				log.Print(err)
+			}
+			tx := AgentToRIC{
+				Equipment: "Tx",
+				Positions: v["TX"][1:],
+				Elements:  int(v["TX"][0]),
+				TS:        int(v["TS"][0]),
+			}
+			marshaled_tx, err := json.Marshal(tx)
+			if err != nil {
+				log.Print(err)
+			}
+			rx := AgentToRIC{
+				Equipment: "Rx",
+				Positions: v["RX"][1:],
+				Elements:  int(v["RX"][0]),
+				TS:        int(v["TS"][0]),
+			}
+			marshaled_rx, err := json.Marshal(rx)
+			if err != nil {
+				log.Print(err)
+			}
+			send = send + string(marshaled_ris) + "\n" + string(marshaled_tx) + "\n" + string(marshaled_rx) + "\n"
+
 			/*for idx, f := range v[1:] {
 				msg := AgentToRIC{
 					Equipment: agent,

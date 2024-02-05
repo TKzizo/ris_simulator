@@ -21,11 +21,11 @@ type Environment struct {
 	Height float64 `json:"height"`
 }
 
-type RISCHANNL [][]float64
+type SimAgentChannel map[string][]float64
 
 type Updates struct {
-	Ris Coordinates
-	Rx  Coordinates
-	Tx  Coordinates
-	Los bool
+	Ris Coordinates `json:"Ris"`
+	Rx  Coordinates `json:"Rx"`
+	Tx  Coordinates `json:"Tx"`
+	Los bool        `json:"Los"`
 }

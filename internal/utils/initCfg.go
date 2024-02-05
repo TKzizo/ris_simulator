@@ -18,18 +18,29 @@ type InitConfig struct {
 }
 
 type _Equipements struct {
-	Tx  tx_rx_ris `json:"TX"`
-	Rx  tx_rx_ris `json:"RX"`
-	Ris tx_rx_ris `json:"RIS"`
+	Ris ris   `json:"RIS"`
+	Tx  tx_rx `json:"TX"`
+	Rx  tx_rx `json:"RX"`
 }
-type tx_rx_ris struct {
-	Elements int `json:"Elements"`
+
+type tx_rx struct {
+	Elements int `json:"NbrElements"`
 	Coord    struct {
 		X float64 `json:"x"`
 		Y float64 `json:"y"`
 		Z float64 `json:"z"`
-	} `json:"Coordinates"`
+	} `json:"Position"`
 	Type int `json:"Type"`
+}
+
+type ris struct {
+	Elements int `json:"NbrElements"`
+	Coord    struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+		Z float64 `json:"z"`
+	} `json:"Position"`
+	Broadside int `json:"Broadside"`
 }
 
 func InitCfg(cfgPath string) InitConfig {

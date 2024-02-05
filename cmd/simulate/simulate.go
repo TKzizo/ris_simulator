@@ -5,6 +5,8 @@ package simulate
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,7 +16,7 @@ import (
 )
 
 const (
-	portDefault int16 = 8080
+	portDefault int = 9696
 )
 
 var (
@@ -22,7 +24,8 @@ var (
 	cfg           utils.InitConfig
 	userPositions string
 	gui           bool
-	port          int16
+	//port          int
+	simulation *Simulation
 	//testMode  bool // This mode is for testing the xAPP
 )
 
@@ -34,13 +37,13 @@ var SimulateCmd = &cobra.Command{
 	launch the simulateur and connect to E2 agent to receive coefficients from Xapp`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		// This is a fix to having the port value set without setting gui to true
-		{
-			port := cmd.Flags().Lookup("set-gui-port")
-			gui := cmd.Flags().Lookup("set-gui")
+		/*{
+			port := cmd.Flags().Lookup("set-viz-port")
+			gui := cmd.Flags().Lookup("set-viz")
 			if port.Changed && !gui.Changed {
 				gui.Value.Set("true")
 			}
-		}
+		}*/
 
 		cfgFilePath = cmd.Parent().Flags().Lookup("config-file").Value.String()
 		userPositions = cmd.Parent().Flags().Lookup("rx-positions-file").Value.String()
@@ -50,10 +53,19 @@ var SimulateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("simulate called")
 		fmt.Println("Gui Bool: ", gui)
-		fmt.Println("Gui port: ", port)
-		fmt.Println(cmd.Flags().Lookup("set-gui-port").Changed)
-		simulation := InitSimualtion(cfg)
+		//fmt.Println("Gui port: ", port)
+		//fmt.Println(cmd.Flags().Lookup("set-viz-port").Changed)
+		simulation = InitSimualtion(cfg)
 		simulation.Setup(cfg, userPositions)
+		if gui {
+			fmt.Println("Visualization at: http://localhost:" + strconv.Itoa(portDefault))
+			http.HandleFunc("/", mainHandler)
+			http.HandleFunc("/pos", PostionHandler)
+			http.HandleFunc("/init", initHandler)
+			http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("web/assets"))))
+			http.Handle("/loadtest/", http.StripPrefix("/loadtest/", http.FileServer(http.Dir("web/assets/loadtest"))))
+			http.ListenAndServe(":"+strconv.Itoa(portDefault), nil)
+		}
 		simulate(*simulation)
 
 	},
@@ -61,8 +73,8 @@ var SimulateCmd = &cobra.Command{
 
 func init() {
 
-	SimulateCmd.Flags().BoolVar(&gui, "set-gui", false, "Visualize the simulation inside browser")
-	SimulateCmd.Flags().Int16Var(&port, "set-gui-port", portDefault, "set port of web visualization page")
+	SimulateCmd.Flags().BoolVar(&gui, "set-viz", false, "Visualize the simulation inside browser")
+	//SimulateCmd.Flags().IntVar(&port, "set-viz-port", portDefault, "set port of web visualization page") // Removed
 
 	fmt.Println("simulate init call")
 
@@ -90,12 +102,12 @@ func simulate(simulation Simulation) {
 			//	simulation.RisChannl <- []float64{simulation.Tx.xyz.x, simulation.Rx.xyz.y, simulation.Rx.xyz.z}
 			ts := time.Now().Unix()
 			//simulation.RisChannl <- [][]float64{[]float64{float64(ts)}, []float64{v.rx.x, v.rx.y, v.rx.z}, hd, gd, dd}
-			simulation.RisChannl <- [][]float64{[]float64{float64(ts)},
-				[]float64{v.Ris.X, v.Ris.Y, v.Ris.Z},
-				[]float64{v.Tx.X, v.Tx.Y, v.Tx.Z},
-				[]float64{v.Rx.X, v.Rx.Y, v.Rx.Z},
+			simulation.RisChannl <- map[string][]float64{
+				"RIS": []float64{float64(simulation.Ris.N), v.Ris.X, v.Ris.Y, v.Ris.Z},
+				"TX":  []float64{float64(simulation.Tx.N), v.Tx.X, v.Tx.Y, v.Tx.Z},
+				"RX":  []float64{float64(simulation.Rx.N), v.Rx.X, v.Rx.Y, v.Rx.Z},
+				"TS":  []float64{float64(ts)},
 			}
-
 			SavedHG[ts] = []*cmat.Cmatrix{h, g, d}
 			time.Sleep(20 * time.Millisecond)
 			//generateData(simulation, 1)
